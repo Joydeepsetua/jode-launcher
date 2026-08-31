@@ -1,0 +1,10 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      Debug-only. Metro is reached over the network during development; the
+      release build ships with zero permissions and never touches the network.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application android:usesCleartextTraffic="${usesCleartextTraffic}" />
+</manifest>

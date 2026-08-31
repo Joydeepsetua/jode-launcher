@@ -1,5 +1,15 @@
 {
   "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    // Codegen reads the spec's import path literally, but React Native ships the
+    // matching declarations under `types_generated`. Map it so TypeScript and
+    // codegen can both resolve `EventEmitter<T>` from the same import.
+    "paths": {
+      "react-native/Libraries/Types/CodegenTypes": [
+        "./node_modules/react-native/types_generated/Libraries/Types/CodegenTypes.d.ts"
+      ]
+    }
+  },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["**/node_modules", "**/Pods"]
 }

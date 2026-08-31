@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  One policy. `force-lock` permits lockNow() and nothing else: it cannot wipe
+  the device, expire or read passwords, disable the camera, or monitor anything.
+-->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies>
+        <force-lock />
+    </uses-policies>
+</device-admin>

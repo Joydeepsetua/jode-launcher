@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 8+ composes the icon itself: it masks these two layers into whatever
+  shape the device uses, so the artwork must not carry a shape of its own. The
+  background is the flat plate; the foreground is the mark alone, sized to the
+  central 72dp that every mask is guaranteed to show.
+
+  The monochrome layer is what Android 13+ tints for themed icons. Without it
+  the launcher would be handed the full-colour icon and shrink it inside a
+  coloured circle.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />
+</adaptive-icon>

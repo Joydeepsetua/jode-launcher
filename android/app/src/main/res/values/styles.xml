@@ -1,8 +1,20 @@
 <resources>
 
-    <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
-        <!-- Customize your theme here. -->
+        <!--
+          A home app sits directly on the device wallpaper: the window itself
+          draws nothing, and the system composites the user's wallpaper behind
+          it. This also covers the cold-start frame — the starting window is
+          transparent, so the wallpaper is on screen from the very first frame
+          and there is no flash of a solid colour before React paints.
+          The legibility scrim over the wallpaper is drawn in JS (src/theme).
+        -->
+        <item name="android:windowShowWallpaper">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:colorBackgroundCacheHint">@null</item>
+        <!-- A launcher owns the whole screen; no system chrome of our own. -->
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
     </style>
 

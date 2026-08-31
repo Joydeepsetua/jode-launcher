@@ -1,3 +1,8 @@
 <resources>
-    <string name="app_name">MyLauncher</string>
+    <string name="app_name">JODE Launcher</string>
+    <!--
+      Shown by the system on its own device-admin screen, where it is the only
+      chance to say what the permission is for before the user decides.
+    -->
+    <string name="lock_admin_explanation">Lets a double tap on the home screen turn the display off. JODE asks for nothing else, and holds no other policy.</string>
 </resources>

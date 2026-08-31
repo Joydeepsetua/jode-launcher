@@ -1,0 +1,10 @@
+<resources>
+    <!--
+      The plate the mark sits on, and the only colour the app defines in
+      resources. The mark is black and carries no background of its own, so the
+      plate is plain white — the same white baked into the legacy icons and the
+      welcome screen's logo, so every place the mark appears meets its
+      background without a seam. The UI palette lives in src/theme.
+    -->
+    <color name="ic_launcher_background">#FFFFFF</color>
+</resources>
