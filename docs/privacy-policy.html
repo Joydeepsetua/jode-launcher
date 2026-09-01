@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy Policy — JODE Launcher</title>
+    <meta
+      name="description"
+      content="Privacy policy for JODE Launcher, an Android home screen that collects no personal data and has no network access."
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <header class="doc">
+        <p class="eyebrow">JODE Launcher</p>
+        <h1>Privacy Policy</h1>
+        <p class="meta">
+          Effective 1 September 2026 · Last updated 1 September 2026
+        </p>
+      </header>
+
+      <p class="lede">
+        JODE Launcher does not collect, transmit, sell, or share any personal
+        data. It has no accounts, no servers, no analytics, no advertising, and
+        no network access of any kind. Everything the app reads stays on your
+        device.
+      </p>
+
+      <div class="callout">
+        <p>
+          <strong>In one line:</strong> the app has no internet permission, so
+          nothing it touches can leave your phone — not to us, and not to anyone
+          else.
+        </p>
+      </div>
+
+      <h2>1. Who this policy is from</h2>
+      <p>
+        This policy applies to the Android application
+        <strong>JODE Launcher</strong> (package <code>com.zypido.jode</code>),
+        published by <strong>Joydeep Setua</strong> (“we”, “us”). You can reach
+        us at <a href="mailto:zypido@gmail.com">zypido@gmail.com</a>.
+      </p>
+
+      <h2>2. What the app is</h2>
+      <p>
+        JODE Launcher is a minimal Android home screen. It shows a clock, your
+        screen time for today, your five most recently opened apps, and a search
+        field for launching any installed app by name. It has no widgets,
+        folders, news feed, weather, contacts, web search, or account system.
+      </p>
+
+      <h2>3. Data we collect</h2>
+      <p>
+        <strong>None.</strong> We do not collect, receive, store, process, or
+        have access to any personal or device information about you. We operate
+        no servers and no backend. We cannot identify you, and we have no way of
+        knowing that you have installed the app at all.
+      </p>
+      <p>
+        The app contains no third-party SDKs, no analytics or measurement
+        libraries, no advertising networks, no crash-reporting service, and no
+        tracking of any kind.
+      </p>
+
+      <h2>4. Information the app reads on your device</h2>
+      <p>
+        To function as a home screen, the app asks Android for certain
+        information. All of it is read on the device, used immediately to draw
+        the screen, and never transmitted anywhere.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>What is read</th>
+              <th>Why</th>
+              <th>Where it goes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                The list of apps installed on your device that have a launcher
+                icon — their names, icons, and package identifiers
+              </td>
+              <td>
+                To display and search your app list, and to launch the app you
+                choose
+              </td>
+              <td>Held in memory while the app runs; never written off-device</td>
+            </tr>
+            <tr>
+              <td>
+                Android usage statistics — which apps were opened and for how
+                long
+              </td>
+              <td>
+                To order the five recent apps and total today’s screen time
+              </td>
+              <td>Read from the system on demand; never written off-device</td>
+            </tr>
+            <tr>
+              <td>
+                A device-administrator entry limited to the single “lock screen”
+                policy
+              </td>
+              <td>
+                So double-tapping the home screen can lock the device, if you
+                enable it
+              </td>
+              <td>
+                Held by Android; grants no access to any content on your device
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        The app requests neither location, camera, microphone, contacts,
+        calendar, SMS, call logs, files, photos, nor any other runtime
+        permission. It does not read your notifications, messages, browsing
+        history, clipboard, or the contents of any other app. It does not use
+        Android’s <code>QUERY_ALL_PACKAGES</code> permission; the app list comes
+        from a narrow declaration that reveals only the apps a home screen must
+        be able to show.
+      </p>
+
+      <h2>5. Information stored on your device</h2>
+      <p>
+        The app keeps a small amount of state in its own private storage area,
+        readable only by the app itself:
+      </p>
+      <ul>
+        <li>A flag recording that the first-run welcome screen has been shown.</li>
+        <li>
+          A short local list of apps you launched from this launcher, used to
+          order the recents row if you have not granted usage access.
+        </li>
+        <li>
+          A single number: the highest daily screen-time total seen so far, so
+          today can be compared against it.
+        </li>
+      </ul>
+      <p>
+        This is stored using Android’s private per-app storage. It is not
+        readable by other apps, it is not included in Android cloud backups (the
+        app disables backup), and it is deleted entirely when you uninstall the
+        app or clear its data from Android Settings.
+      </p>
+
+      <h2>6. Permissions, and how to turn them off</h2>
+
+      <h3>Usage access (<code>PACKAGE_USAGE_STATS</code>)</h3>
+      <p>
+        Optional. This is special access, not a runtime permission: declaring it
+        grants nothing and shows no prompt, and it takes effect only if you
+        switch it on yourself under
+        <em>Settings → Apps → Special app access → Usage access</em>. It lets the
+        launcher show apps you opened anywhere on the device, and today’s screen
+        time. Without it the launcher still works, falling back to the launches
+        it performed itself and hiding the screen-time figure. You can revoke it
+        at any time in the same Settings screen.
+      </p>
+
+      <h3>Device administrator (lock screen)</h3>
+      <p>
+        Optional. If you enable it, the app holds one device-administrator
+        policy — <em>force lock</em> — which allows the double-tap-to-lock
+        gesture to turn off the screen. It does not allow the app to wipe your
+        device, read or change your password, monitor your activity, or access
+        any content. You can revoke it at any time under
+        <em>Settings → Security → Device admin apps</em>.
+      </p>
+
+      <h3>Home app role</h3>
+      <p>
+        Optional. Setting JODE Launcher as your default home app is entirely
+        your choice and can be changed at any time under
+        <em>Settings → Apps → Default apps → Home app</em>.
+      </p>
+
+      <h2>7. Sharing and disclosure</h2>
+      <p>
+        Because we collect nothing, there is nothing to share, sell, rent,
+        disclose, or hand over. We have no data to provide to advertisers, data
+        brokers, partners, or law enforcement.
+      </p>
+
+      <h2>8. Data retention and deletion</h2>
+      <p>
+        We hold no data about you and therefore retain nothing. The small amount
+        of local state described in section 5 remains on your device until you
+        clear the app’s data or uninstall it, at which point it is removed
+        permanently. No request to us is needed, and no copy exists anywhere
+        else. If you would like to confirm this, write to
+        <a href="mailto:zypido@gmail.com">zypido@gmail.com</a>.
+      </p>
+
+      <h2>9. Children</h2>
+      <p>
+        The app is not directed at children and collects no data from anyone,
+        including children under 13 (or the equivalent minimum age in your
+        country). As no personal information is ever gathered, none can be
+        gathered from a child.
+      </p>
+
+      <h2>10. Security</h2>
+      <p>
+        The app transmits nothing, so there is no transmission to intercept and
+        no server to breach. On-device state is confined to Android’s private
+        per-app storage and is protected by the operating system’s own
+        sandboxing.
+      </p>
+
+      <h2>11. Your rights</h2>
+      <p>
+        Privacy laws such as the GDPR, the CCPA, and India’s Digital Personal
+        Data Protection Act give you rights to access, correct, export, and
+        delete personal data held about you. We hold no personal data about any
+        user, so there is nothing for us to produce, correct, or erase. You
+        retain full control over the on-device state described above through
+        Android’s own settings.
+      </p>
+
+      <h2>12. Changes to this policy</h2>
+      <p>
+        If this policy changes, the updated version will be posted at this same
+        address with a new “last updated” date. Material changes — in
+        particular, any change to the statement that the app collects nothing —
+        will be reflected in the app’s Google Play listing.
+      </p>
+
+      <h2>13. Contact</h2>
+      <p>
+        Questions about this policy or about the app’s handling of data:
+        <a href="mailto:zypido@gmail.com">zypido@gmail.com</a>.
+      </p>
+
+      <footer class="doc">
+        <a href="index.html">Home</a>
+        <a href="terms.html">Terms &amp; Conditions</a>
+        <a href="https://github.com/Joydeepsetua/jode_launcher">Source code</a>
+      </footer>
+    </main>
+  </body>
+</html>
