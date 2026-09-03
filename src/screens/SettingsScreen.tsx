@@ -12,7 +12,6 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Icon, type IconName} from '../components/Icon';
-import {Slider} from '../components/Slider';
 import {
   canLockScreen,
   hasUsageAccess,
@@ -35,11 +34,15 @@ type Permission = {
   request: () => void;
 };
 
-const THEME_CHOICES: readonly {
-  value: ThemeMode;
+/** One option in a {@link Segmented} row. */
+type Choice<T> = {
+  value: T;
   label: string;
-  icon: IconName;
-}[] = [
+  /** Left off where the options have no picture to give them, as the wash has. */
+  icon?: IconName;
+};
+
+const THEME_CHOICES: readonly Choice<ThemeMode>[] = [
   {value: 'system', label: 'System', icon: 'contrast'},
   {value: 'dark', label: 'Dark', icon: 'moon'},
   {value: 'light', label: 'Light', icon: 'sun'},
@@ -60,6 +63,19 @@ const TILE_GAP = 14;
 
 /** One label per step in {@link SCRIM_STEPS}, in the same order. */
 const SCRIM_LABELS = ['None', 'Subtle', 'Medium', 'Strong'] as const;
+
+/**
+ * The wash as the segmented row wants it: the opacity to store, under the word
+ * for it. A step the labels have not been extended to cover names itself in
+ * percent rather than going blank, so adding a stop cannot silently ship an
+ * unlabelled segment.
+ */
+const WASH_CHOICES: readonly Choice<number>[] = SCRIM_STEPS.map(
+  (step, position) => ({
+    value: step,
+    label: SCRIM_LABELS[position] ?? `${Math.round(step * 100)}%`,
+  }),
+);
 
 /**
  * Which stop a stored wash is on.
@@ -177,18 +193,11 @@ export function SettingsScreen() {
     [isDefault, usageAccess, canLock],
   );
 
-  // The wash is stored as the opacity itself; the slider counts stops, and this
-  // is where one becomes the other.
-  const scrimIndex = nearestStep(scrimOpacity);
-  const chooseWash = useCallback(
-    (position: number) => {
-      const step = SCRIM_STEPS[position];
-      if (step !== undefined) {
-        setScrimOpacity(step);
-      }
-    },
-    [setScrimOpacity],
-  );
+  // A segment's value is the opacity to store, so choosing one needs nothing in
+  // between. Reading goes the long way round: what is stored need not be on a
+  // stop — an older build's value, or one the steps have moved away from — so
+  // the lit segment is the nearest stop rather than an exact match.
+  const wash = WASH_CHOICES[nearestStep(scrimOpacity)]?.value ?? 0;
 
   return (
     <View
@@ -300,43 +309,19 @@ export function SettingsScreen() {
             <View style={styles.control}>
               <View style={styles.controlHead}>
                 <View style={[styles.mark, {borderColor: theme.colors.border}]}>
-                  <Icon name="brush" size={17} color={theme.colors.text} />
+                  <Icon name="palette" size={17} color={theme.colors.text} />
                 </View>
                 <Text style={[styles.rowTitle, {color: theme.colors.text}]}>
                   Theme
                 </Text>
               </View>
-              {/* Three words in a row rather than a menu: with this few
-                  choices, showing them all is shorter than hiding two. */}
-              <View
-                style={[
-                  styles.segments,
-                  {backgroundColor: theme.colors.canvas},
-                ]}>
-                {THEME_CHOICES.map(choice => {
-                  const selected = choice.value === themeMode;
-                  const ink = selected
-                    ? theme.colors.textInverse
-                    : theme.colors.textSecondary;
-                  return (
-                    <Pressable
-                      key={choice.value}
-                      onPress={() => setThemeMode(choice.value)}
-                      accessibilityRole="radio"
-                      accessibilityState={{selected}}
-                      style={({pressed}) => [
-                        styles.segment,
-                        selected && {backgroundColor: theme.colors.text},
-                        {opacity: pressed && !selected ? 0.6 : 1},
-                      ]}>
-                      <Icon name={choice.icon} size={15} color={ink} />
-                      <Text style={[styles.segmentText, {color: ink}]}>
-                        {choice.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+              <Segmented
+                theme={theme}
+                choices={THEME_CHOICES}
+                selected={themeMode}
+                onChange={setThemeMode}
+                name="theme"
+              />
             </View>
 
             <View
@@ -347,7 +332,7 @@ export function SettingsScreen() {
               ]}>
               <View style={styles.controlHead}>
                 <View style={[styles.mark, {borderColor: theme.colors.border}]}>
-                  <Icon name="droplet" size={17} color={theme.colors.text} />
+                  <Icon name="image" size={17} color={theme.colors.text} />
                 </View>
                 <View style={styles.rowText}>
                   <Text style={[styles.rowTitle, {color: theme.colors.text}]}>
@@ -365,45 +350,13 @@ export function SettingsScreen() {
                   </Text>
                 </View>
               </View>
-              <View style={styles.slider}>
-                <Slider
-                  count={SCRIM_STEPS.length}
-                  index={scrimIndex}
-                  onChange={chooseWash}
-                  color={theme.colors.text}
-                  trackColor={theme.colors.selection}
-                  label={SCRIM_LABELS[scrimIndex] ?? SCRIM_LABELS[0]}
-                />
-                {/* The stops named, and each name a way to reach its stop —
-                    four positions are fiddly to land on exactly by dragging. */}
-                <View style={styles.stops}>
-                  {SCRIM_LABELS.map((label, position) => (
-                    <Pressable
-                      key={label}
-                      onPress={() => chooseWash(position)}
-                      accessibilityRole="button"
-                      accessibilityLabel={label + ' wallpaper wash'}
-                      hitSlop={8}
-                      style={styles.stop}>
-                      <Text
-                        style={[
-                          styles.stopText,
-                          position === 0 && styles.stopFirst,
-                          position === SCRIM_LABELS.length - 1 &&
-                            styles.stopLast,
-                          {
-                            color:
-                              position === scrimIndex
-                                ? theme.colors.text
-                                : theme.colors.textMuted,
-                          },
-                        ]}>
-                        {label}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
+              <Segmented
+                theme={theme}
+                choices={WASH_CHOICES}
+                selected={wash}
+                onChange={setScrimOpacity}
+                name="wallpaper wash"
+              />
             </View>
           </Card>
         </Section>
@@ -436,6 +389,72 @@ function Section({
         {title}
       </Text>
       {children}
+    </View>
+  );
+}
+
+/**
+ * A row of choices with every one of them showing, the current one filled in.
+ *
+ * Both appearance settings are a short closed list, and at this length laying
+ * the options out is shorter than hiding all but one behind a menu: there is
+ * nothing to open, and what is set now can be read without tapping anything.
+ * The wash was a slider until it was this, which asked the user to land on one
+ * of four positions by dragging to say something as coarse as "a bit darker".
+ *
+ * Generic over the value because the two lists hold different things — the
+ * theme stores a name, the wash stores the opacity itself — so a choice can
+ * carry the value to store rather than an index the caller has to look up.
+ * Nothing is filled in when the current value is not one of the choices, which
+ * is a truthful thing to show and the reason the wash rounds to a stop first.
+ */
+function Segmented<T>({
+  theme,
+  choices,
+  selected,
+  onChange,
+  name,
+}: {
+  theme: Theme;
+  choices: readonly Choice<T>[];
+  selected: T;
+  onChange: (value: T) => void;
+  /** What the choices are of, for a screen reader that hears no heading. */
+  name: string;
+}) {
+  return (
+    <View style={[styles.segments, {backgroundColor: theme.colors.canvas}]}>
+      {choices.map(choice => {
+        const isSelected = choice.value === selected;
+        const ink = isSelected
+          ? theme.colors.textInverse
+          : theme.colors.textSecondary;
+        return (
+          <Pressable
+            key={choice.label}
+            onPress={() => onChange(choice.value)}
+            accessibilityRole="radio"
+            accessibilityState={{selected: isSelected}}
+            accessibilityLabel={`${choice.label} ${name}`}
+            style={({pressed}) => [
+              styles.segment,
+              isSelected && {backgroundColor: theme.colors.text},
+              {opacity: pressed && !isSelected ? 0.6 : 1},
+            ]}>
+            {choice.icon !== undefined ? (
+              <Icon name={choice.icon} size={15} color={ink} />
+            ) : null}
+            <Text
+              style={[
+                styles.segmentText,
+                choice.icon === undefined && styles.segmentTextAlone,
+                {color: ink},
+              ]}>
+              {choice.label}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -679,27 +698,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 7,
   },
-  slider: {
-    marginTop: 16,
-  },
-  stops: {
-    flexDirection: 'row',
-    marginTop: 2,
-  },
-  stop: {
-    flex: 1,
-  },
-  stopText: {
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  // The outermost two sit against the ends of the track rather than over the
-  // middle of their share of the row, which is where their stops are.
-  stopFirst: {
-    textAlign: 'left',
-  },
-  stopLast: {
-    textAlign: 'right',
+  // The gap belongs to the icon, so a label standing on its own gives it back
+  // and sits centred in the segment rather than pushed off it.
+  segmentTextAlone: {
+    marginLeft: 0,
   },
   callout: {
     flexDirection: 'row',

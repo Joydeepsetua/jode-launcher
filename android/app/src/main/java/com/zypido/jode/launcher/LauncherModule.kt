@@ -360,7 +360,16 @@ class LauncherModule(reactContext: ReactApplicationContext) : NativeLauncherSpec
     }
   }
 
-  /** The direct "make this your home app" dialog. Not offered by every OEM. */
+  /**
+   * The direct "make this your home app" dialog. Not offered by every OEM.
+   *
+   * Only ever a way in. The role dialog can grant the role but has no answer
+   * that gives it away again, so while we already hold it this reports "not
+   * handled" and the caller opens the home-app list, which is the one place
+   * another launcher can be chosen. Returning true here instead would leave the
+   * settings row doing nothing at all once the launcher was the default — the
+   * one moment the user most needs the way out.
+   */
   @RequiresApi(Build.VERSION_CODES.Q)
   private fun requestHomeRole(activity: Activity): Boolean =
       try {
@@ -368,7 +377,7 @@ class LauncherModule(reactContext: ReactApplicationContext) : NativeLauncherSpec
         when {
           roleManager == null -> false
           !roleManager.isRoleAvailable(RoleManager.ROLE_HOME) -> false
-          roleManager.isRoleHeld(RoleManager.ROLE_HOME) -> true
+          roleManager.isRoleHeld(RoleManager.ROLE_HOME) -> false
           else -> {
             activity.startActivityForResult(
                 roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME),

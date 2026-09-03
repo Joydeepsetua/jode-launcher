@@ -20,8 +20,8 @@ export type IconName =
   | 'clock'
   | 'lock'
   | 'shield'
-  | 'brush'
-  | 'droplet'
+  | 'palette'
+  | 'image'
   | 'sun'
   | 'moon'
   | 'sparkle'
@@ -110,19 +110,30 @@ const SHAPES: Record<IconName, React.ReactNode> = {
   shield: (
     <Path d="M12 3.2 19 5.8v5.6c0 4.2-2.8 7.6-7 9.4-4.2-1.8-7-5.2-7-9.4V5.8z" />
   ),
-  // A brush held at the angle a hand holds it, which is the only thing that
-  // separates the shape from an arrow.
-  brush: (
+  // A painter's palette: the disc every other round icon here is drawn on,
+  // with the thumb notch bitten out of the bottom right and four wells of
+  // paint on it. The wells are the only filled shapes in the set apart from
+  // the half disc below, and they have to be — four more rings at this size
+  // would read as holes rather than as colour.
+  palette: (
     <>
-      <Path d="m14 4.6 5.4 5.4" />
-      <Path d="M16.7 7.3 8.9 15.1a3 3 0 0 0-.8 1.5l-.7 3.2 3.2-.7a3 3 0 0 0 1.5-.8l7.8-7.8z" />
-      <Path d="m7.4 19.8-2.2 1" />
+      <Path d="M12 3.5c-4.7 0-8.5 3.8-8.5 8.5s3.8 8.5 8.5 8.5c1.2 0 1.9-1 1.4-2c-.4-.9.3-1.9 1.3-1.9h1.8c2.4 0 4.3-2 4.3-4.4c0-4.8-3.9-8.7-8.8-8.7z" />
+      <Circle cx={7.4} cy={12.2} r={1} fill="currentColor" stroke="none" />
+      <Circle cx={8.4} cy={7.8} r={1} fill="currentColor" stroke="none" />
+      <Circle cx={12.6} cy={6.7} r={1} fill="currentColor" stroke="none" />
+      <Circle cx={16.4} cy={9.3} r={1} fill="currentColor" stroke="none" />
     </>
   ),
-  // A drop: a point at the top, a circle at the bottom, the two sides run
-  // between them. What a wash of anything looks like.
-  droplet: (
-    <Path d="M12 3.4c3.6 4 6 6.9 6 9.8a6 6 0 0 1-12 0c0-2.9 2.4-5.8 6-9.8z" />
+  // A framed picture, sun over a ridge — the landscape every photograph icon
+  // has been since the first one, and the shape a wallpaper takes on a screen.
+  // The ridge stops short of the frame rather than running under it: there is
+  // no clip here, and a line crossing the border would read as a mistake.
+  image: (
+    <>
+      <Rect x={3.5} y={4.5} width={17} height={15} rx={3} />
+      <Circle cx={8} cy={8.6} r={2} />
+      <Path d="M4.8 17.6 10.2 12.2a1.9 1.9 0 0 1 2.7 0l4.6 4.6" />
+    </>
   ),
   sun: (
     <>
