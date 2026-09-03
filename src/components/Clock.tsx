@@ -14,7 +14,7 @@ function ClockComponent() {
         <Text
           style={[
             styles.time,
-            {color: theme.colors.text, fontFamily: theme.fonts.ui},
+            {color: theme.colors.text},
           ]}
           // Never let a long format push the layout around.
           numberOfLines={1}>
@@ -25,7 +25,7 @@ function ClockComponent() {
         <Text
           style={[
             styles.meridiem,
-            {color: theme.colors.textSecondary, fontFamily: theme.fonts.ui},
+            {color: theme.colors.textSecondary},
           ]}>
           {meridiem}
         </Text>
@@ -36,7 +36,7 @@ function ClockComponent() {
           styles.date,
           // Full strength, not the dimmed secondary: at 14px over a wallpaper
           // there is not enough of it on screen to survive being quiet.
-          {color: theme.colors.text, fontFamily: theme.fonts.ui},
+          {color: theme.colors.text},
         ]}
         numberOfLines={1}>
         {date}
@@ -66,12 +66,6 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   date: {
-    // Pulled up into the empty descender space the 52px line reserves below
-    // digits that have no descenders. Zero margin still left a visible gap,
-    // because the gap was never margin — it was the line box. This sits the
-    // date's caps just under the digits' baseline — the end of the empty space,
-    // and as close as the two go before the glyphs themselves meet.
-    marginTop: -16,
     fontSize: 14,
     letterSpacing: 1.2,
     includeFontPadding: false,

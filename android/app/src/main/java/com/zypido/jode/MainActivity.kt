@@ -1,6 +1,7 @@
 package com.zypido.jode
 
 import android.content.Intent
+import android.os.Bundle
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultReactActivityDelegate
@@ -12,6 +13,16 @@ class MainActivity : ReactActivity() {
 
   override fun createReactActivityDelegate(): ReactActivityDelegate =
       DefaultReactActivityDelegate(this, mainComponentName)
+
+  /**
+   * `null` rather than the saved state, as react-native-screens requires: the
+   * navigator's fragments are rebuilt from JS on every start, and handing the
+   * platform a saved fragment hierarchy to restore alongside them crashes on
+   * the way back in after the activity has been recreated.
+   */
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(null)
+  }
 
   /**
    * As a `singleTask` home activity we are re-delivered the HOME intent instead

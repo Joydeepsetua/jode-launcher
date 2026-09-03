@@ -119,7 +119,7 @@ function ScreenTimeRingComponent() {
         <Text
           style={[
             styles.value,
-            {color: theme.colors.text, fontFamily: theme.fonts.ui},
+            {color: theme.colors.text},
           ]}
           numberOfLines={1}>
           {label}
@@ -127,7 +127,7 @@ function ScreenTimeRingComponent() {
         <Text
           style={[
             styles.unit,
-            {color: theme.colors.textSecondary, fontFamily: theme.fonts.ui},
+            {color: theme.colors.textSecondary},
           ]}
           numberOfLines={1}>
           TODAY

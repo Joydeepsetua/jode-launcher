@@ -161,14 +161,14 @@ export function WelcomeScreen({onDone}: Props) {
           <Text
             style={[
               styles.wordmark,
-              {color: theme.colors.text, fontFamily: theme.fonts.ui},
+              {color: theme.colors.text},
             ]}>
             JODE
           </Text>
           <Text
             style={[
               styles.tagline,
-              {color: theme.colors.textSecondary, fontFamily: theme.fonts.ui},
+              {color: theme.colors.textSecondary},
             ]}>
             A home screen that is a search field and nothing else. Type a
             letter, open an app, get on with your day.
@@ -186,7 +186,7 @@ export function WelcomeScreen({onDone}: Props) {
             <Text
               style={[
                 styles.buttonText,
-                {color: theme.colors.canvas, fontFamily: theme.fonts.ui},
+                {color: theme.colors.canvas},
               ]}>
               Get started
             </Text>
@@ -208,7 +208,7 @@ export function WelcomeScreen({onDone}: Props) {
       <Text
         style={[
           styles.wordmarkSmall,
-          {color: theme.colors.text, fontFamily: theme.fonts.ui},
+          {color: theme.colors.text},
         ]}>
         JODE
       </Text>
@@ -217,21 +217,21 @@ export function WelcomeScreen({onDone}: Props) {
         <Text
           style={[
             styles.eyebrow,
-            {color: theme.colors.textMuted, fontFamily: theme.fonts.ui},
+            {color: theme.colors.textMuted},
           ]}>
           {`${position} of ${requests.length}`}
         </Text>
         <Text
           style={[
             styles.title,
-            {color: theme.colors.text, fontFamily: theme.fonts.ui},
+            {color: theme.colors.text},
           ]}>
           {current.title}
         </Text>
         <Text
           style={[
             styles.copy,
-            {color: theme.colors.textSecondary, fontFamily: theme.fonts.ui},
+            {color: theme.colors.textSecondary},
           ]}>
           {current.body}
         </Text>
@@ -247,7 +247,7 @@ export function WelcomeScreen({onDone}: Props) {
           <Text
             style={[
               styles.skipText,
-              {color: theme.colors.textMuted, fontFamily: theme.fonts.ui},
+              {color: theme.colors.textMuted},
             ]}>
             Not now
           </Text>
@@ -263,7 +263,7 @@ export function WelcomeScreen({onDone}: Props) {
           <Text
             style={[
               styles.buttonText,
-              {color: theme.colors.canvas, fontFamily: theme.fonts.ui},
+              {color: theme.colors.canvas},
             ]}>
             {current.action}
           </Text>

@@ -45,7 +45,7 @@ function AppListItemComponent({result, onPress}: Props) {
       <Text
         style={[
           styles.name,
-          {color: theme.colors.textSecondary, fontFamily: theme.fonts.ui},
+          {color: theme.colors.textSecondary},
         ]}
         numberOfLines={1}
         ellipsizeMode="tail">

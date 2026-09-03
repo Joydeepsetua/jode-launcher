@@ -18,6 +18,8 @@ import {
   type PanResponderGestureState,
 } from 'react-native';
 import {AppState} from 'react-native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {AppListItem} from '../components/AppListItem';
 import {Clock} from '../components/Clock';
@@ -35,6 +37,7 @@ import {
   requestLockScreenPermission,
   requestUsageAccess,
 } from '../native/LauncherModule';
+import type {RootStackParamList} from '../navigation/types';
 import {useTheme} from '../theme';
 import type {SearchResult} from '../types/app';
 import {searchApps} from '../utils/appSearch';
@@ -51,6 +54,27 @@ const SWIPE_UP_MIN_DY = 44;
 /** Movement under this, in dp, is a finger that meant to stay still. */
 const TAP_SLOP = 12;
 
+/**
+ * How long a still finger on the wallpaper waits before settings open.
+ *
+ * The same hold Android has meant "this screen's own settings" since long
+ * before this launcher, and the platform's own long-press duration.
+ */
+const LONG_PRESS_MS = 500;
+
+/**
+ * Empty space held above the drawer's first row, scrolled out of sight.
+ *
+ * Android's scroll view claims a vertical drag the moment it passes the touch
+ * slop, whether or not it has anywhere left to go, and cancels the JS gesture
+ * that was watching for a swipe down. So the swipe-to-close cannot be read off
+ * the finger once it lands on the list — it has to be read off the list's own
+ * scrolling. This slack is what gives it something to read: at rest the drawer
+ * sits {@link PULL_SLACK} in, and pulling down runs it back out to zero, which
+ * is the same dismissal a swipe down means anywhere else on the screen.
+ */
+const PULL_SLACK = 64;
+
 /** How long the drawer takes to rise, and to fall — leaving is always quicker. */
 const OPEN_MS = 260;
 const CLOSE_MS = 190;
@@ -58,7 +82,8 @@ const CLOSE_MS = 190;
 /** An upward drag, rather than a sideways one that happened to drift. */
 function isSwipeUp(gesture: PanResponderGestureState): boolean {
   return (
-    gesture.dy <= -SWIPE_UP_MIN_DY && Math.abs(gesture.dy) > Math.abs(gesture.dx)
+    gesture.dy <= -SWIPE_UP_MIN_DY &&
+    Math.abs(gesture.dy) > Math.abs(gesture.dx)
   );
 }
 
@@ -76,6 +101,8 @@ export function LauncherScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const keyboardHeight = useKeyboardHeight();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const inputRef = useRef<SearchInputHandle | null>(null);
   const listRef = useRef<FlatList<SearchResult> | null>(null);
 
@@ -111,6 +138,14 @@ export function LauncherScreen() {
   // Where the drawer's list is scrolled to. A swipe down only closes the
   // drawer from the top of the list; below that it is a scroll and nothing else.
   const drawerOffset = useRef(0);
+  // The hold that opens settings, and whether this gesture already spent
+  // itself on one — a hold that has fired must not also read as a tap.
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFired = useRef(false);
+  // Whether a finger is on the drawer's list right now. Only a drag reaching
+  // the top closes it — a fling that happens to land there is the user asking
+  // for the first row, not for the drawer to go away.
+  const drawerDragging = useRef(false);
   // 0 while the drawer is down, 1 while it is up, and every frame between.
   const rise = useRef(new Animated.Value(0)).current;
   // Lets the auto-launch below tell typing apart from deleting.
@@ -138,6 +173,35 @@ export function LauncherScreen() {
     [allRows, index, query],
   );
 
+  // How tall the drawer's list is on screen, which decides whether it has the
+  // content to scroll at all.
+  const [listHeight, setListHeight] = useState(0);
+
+  /**
+   * The slack above the first row, or none when there is nothing to scroll.
+   *
+   * A list that does not fill its viewport cannot be scrolled into the slack,
+   * so the slack would be a gap under the search field that never goes away —
+   * and a drawer narrowed to two results is one the user leaves by picking a
+   * result or by Back, not by pulling it down.
+   */
+  const pullSlack = useMemo(() => {
+    const rows = results.length * theme.spacing.rowHeight + 18;
+    return listHeight > 0 && rows >= listHeight ? PULL_SLACK : 0;
+  }, [listHeight, results.length, theme.spacing.rowHeight]);
+
+  // Read by the gesture and scroll handlers, which must see the slack in force
+  // now rather than the one in force when they were made.
+  const pullSlackRef = useRef(pullSlack);
+  pullSlackRef.current = pullSlack;
+
+  /** The list's resting offset, expressed once so nothing drifts from it. */
+  const drawerRest = useMemo(() => ({x: 0, y: pullSlack}), [pullSlack]);
+
+  const handleListLayout = useCallback((event: LayoutChangeEvent) => {
+    setListHeight(event.nativeEvent.layout.height);
+  }, []);
+
   // Space the content must leave at the bottom of an edge-to-edge window. The
   // IME inset React Native reports is measured *above* the navigation bar, so
   // the bar has to be added back or the last row hides under the keyboard.
@@ -151,7 +215,12 @@ export function LauncherScreen() {
   }, []);
 
   const scrollToTop = useCallback(() => {
-    listRef.current?.scrollToOffset({offset: 0, animated: false});
+    // The top of the list is the far side of the slack, not offset zero.
+    listRef.current?.scrollToOffset({
+      offset: pullSlackRef.current,
+      animated: false,
+    });
+    drawerOffset.current = pullSlackRef.current;
   }, []);
 
   /**
@@ -186,6 +255,18 @@ export function LauncherScreen() {
     rise.setValue(0);
     Keyboard.dismiss();
   }, [rise]);
+
+  const cancelLongPress = useCallback(() => {
+    if (longPressTimer.current !== null) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  /** The hold on the wallpaper: settings, sliding in from the right. */
+  const openSettings = useCallback(() => {
+    navigation.navigate('Settings');
+  }, [navigation]);
 
   /** Reveal the field and put the caret in it, on a swipe up. */
   const openSearch = useCallback(() => {
@@ -224,7 +305,7 @@ export function LauncherScreen() {
       if (finished && !searchOpen) {
         setDrawerMounted(false);
         setQuery('');
-        drawerOffset.current = 0;
+        drawerOffset.current = pullSlackRef.current;
       }
     });
     return () => animation.stop();
@@ -236,9 +317,55 @@ export function LauncherScreen() {
 
   const handleDrawerScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      drawerOffset.current = event.nativeEvent.contentOffset.y;
+      const offset = event.nativeEvent.contentOffset.y;
+      drawerOffset.current = offset;
+
+      // The drag ran the list out of slack: the finger is still travelling
+      // down with nowhere left to go, which is the swipe down the list ate.
+      if (
+        drawerDragging.current &&
+        pullSlackRef.current > 0 &&
+        searchOpenRef.current &&
+        offset <= 0
+      ) {
+        resetSearch();
+      }
     },
-    [],
+    [resetSearch],
+  );
+
+  const handleDrawerScrollBeginDrag = useCallback(() => {
+    drawerDragging.current = true;
+  }, []);
+
+  /** Take the list back to rest when a pull stopped short of dismissing. */
+  const settleDrawerScroll = useCallback((offset: number) => {
+    if (!searchOpenRef.current || offset >= pullSlackRef.current) {
+      return;
+    }
+    listRef.current?.scrollToOffset({
+      offset: pullSlackRef.current,
+      animated: true,
+    });
+  }, []);
+
+  const handleDrawerScrollEndDrag = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      drawerDragging.current = false;
+      // A release with speed left in it hands over to a fling, and settling
+      // now would only fight the momentum that is about to run.
+      if (Math.abs(event.nativeEvent.velocity?.y ?? 0) < 0.05) {
+        settleDrawerScroll(event.nativeEvent.contentOffset.y);
+      }
+    },
+    [settleDrawerScroll],
+  );
+
+  const handleDrawerMomentumEnd = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      settleDrawerScroll(event.nativeEvent.contentOffset.y);
+    },
+    [settleDrawerScroll],
   );
 
   /** The drawer's travel: fully below the content area, up to in place. */
@@ -323,6 +450,29 @@ export function LauncherScreen() {
         // Taps on empty space, as before. Anything deeper — a row, the field,
         // a footer — claims its own touch first and never reaches here.
         onStartShouldSetPanResponder: () => true,
+        // A finger that lands on the wallpaper and stays there is asking for
+        // settings. Only on the resting screen: with the drawer up there is no
+        // wallpaper to hold, and a gesture claimed off a list is already a
+        // swipe rather than a hold.
+        onPanResponderGrant: () => {
+          longPressFired.current = false;
+          if (searchOpenRef.current || claimedSwipe.current !== null) {
+            return;
+          }
+          longPressTimer.current = setTimeout(() => {
+            longPressTimer.current = null;
+            longPressFired.current = true;
+            openSettings();
+          }, LONG_PRESS_MS);
+        },
+        onPanResponderMove: (_event, gesture) => {
+          if (
+            Math.abs(gesture.dx) > TAP_SLOP ||
+            Math.abs(gesture.dy) > TAP_SLOP
+          ) {
+            cancelLongPress();
+          }
+        },
         onMoveShouldSetPanResponderCapture: (_event, gesture) => {
           if (!searchOpenRef.current && isSwipeUp(gesture)) {
             claimedSwipe.current = 'up';
@@ -332,7 +482,7 @@ export function LauncherScreen() {
           // below the top the same drag is a scroll, and stays one.
           if (
             searchOpenRef.current &&
-            drawerOffset.current <= 0 &&
+            drawerOffset.current <= pullSlackRef.current &&
             isSwipeDown(gesture)
           ) {
             claimedSwipe.current = 'down';
@@ -341,19 +491,30 @@ export function LauncherScreen() {
           return false;
         },
         onPanResponderRelease: (_event, gesture) => {
+          cancelLongPress();
           // Claimed off a list above, or begun on the background — where we
           // were already the responder and the capture phase never ran.
           const claimed = claimedSwipe.current;
           claimedSwipe.current = null;
 
-          if (claimed === 'up' || (!searchOpenRef.current && isSwipeUp(gesture))) {
+          // The hold already answered this gesture; letting go of it is not a
+          // second thing the user asked for.
+          if (longPressFired.current) {
+            longPressFired.current = false;
+            return;
+          }
+
+          if (
+            claimed === 'up' ||
+            (!searchOpenRef.current && isSwipeUp(gesture))
+          ) {
             openSearch();
             return;
           }
           if (
             claimed === 'down' ||
             (searchOpenRef.current &&
-              drawerOffset.current <= 0 &&
+              drawerOffset.current <= pullSlackRef.current &&
               isSwipeDown(gesture))
           ) {
             resetSearch();
@@ -370,10 +531,18 @@ export function LauncherScreen() {
           handleBackgroundTap();
         },
         onPanResponderTerminate: () => {
+          cancelLongPress();
+          longPressFired.current = false;
           claimedSwipe.current = null;
         },
       }),
-    [handleBackgroundTap, openSearch, resetSearch],
+    [
+      cancelLongPress,
+      handleBackgroundTap,
+      openSearch,
+      openSettings,
+      resetSearch,
+    ],
   );
 
   // Returning from another app: hand the user the resting screen back.
@@ -393,30 +562,45 @@ export function LauncherScreen() {
 
   // HOME pressed while we are already foreground. AppState does not change in
   // that case, so the reset has to come from the activity.
+  //
+  // HOME means the home screen, so it also leaves settings: a user who presses
+  // it expects the launcher, not the screen they wandered off to.
   useEffect(() => {
-    const subscription = addHomePressedListener(closeInstantly);
+    const subscription = addHomePressedListener(() => {
+      navigation.popToTop();
+      closeInstantly();
+    });
     return () => subscription.remove();
-  }, [closeInstantly]);
+  }, [closeInstantly, navigation]);
 
   // A home app has nothing to go back to: Back closes the search, and is
   // otherwise swallowed so the launcher stays on screen.
-  useEffect(() => {
-    const subscription = BackHandler.addEventListener(
-      'hardwareBackPress',
-      () => {
-        if (searchOpenRef.current || queryRef.current.length > 0) {
-          resetSearch();
-        }
-        return true;
-      },
-    );
-    return () => subscription.remove();
-  }, [resetSearch]);
+  //
+  // Bound to focus rather than to mount, because this screen stays mounted
+  // underneath settings and a handler that swallows every Back would leave the
+  // user no way out of the screen above it.
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        () => {
+          if (searchOpenRef.current || queryRef.current.length > 0) {
+            resetSearch();
+          }
+          return true;
+        },
+      );
+      return () => subscription.remove();
+    }, [resetSearch]),
+  );
 
   useEffect(
     () => () => {
       if (noticeTimer.current !== null) {
         clearTimeout(noticeTimer.current);
+      }
+      if (longPressTimer.current !== null) {
+        clearTimeout(longPressTimer.current);
       }
     },
     [],
@@ -549,11 +733,7 @@ export function LauncherScreen() {
       <Pressable
         onPress={error !== null ? reload : undefined}
         style={{paddingHorizontal: theme.spacing.gutter}}>
-        <Text
-          style={[
-            styles.empty,
-            {color: theme.colors.textMuted, fontFamily: theme.fonts.ui},
-          ]}>
+        <Text style={[styles.empty, {color: theme.colors.textMuted}]}>
           {message}
         </Text>
       </Pressable>
@@ -635,7 +815,14 @@ export function LauncherScreen() {
               renderItem={renderItem}
               keyExtractor={keyExtractor}
               getItemLayout={getItemLayout}
+              onLayout={handleListLayout}
+              // The drawer starts past its own slack, so the first row sits
+              // under the field and the space above is there to be pulled into.
+              contentOffset={drawerRest}
               onScroll={handleDrawerScroll}
+              onScrollBeginDrag={handleDrawerScrollBeginDrag}
+              onScrollEndDrag={handleDrawerScrollEndDrag}
+              onMomentumScrollEnd={handleDrawerMomentumEnd}
               scrollEventThrottle={16}
               // Tapping a result while the keyboard is up must launch on the
               // first tap, not spend it dismissing the keyboard.
@@ -649,7 +836,10 @@ export function LauncherScreen() {
               maxToRenderPerBatch={12}
               windowSize={5}
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.listContent}
+              contentContainerStyle={[
+                styles.listContent,
+                {paddingTop: styles.listContent.paddingTop + pullSlack},
+              ]}
               ListEmptyComponent={renderEmpty(drawerMessage)}
             />
           </Animated.View>
@@ -669,10 +859,7 @@ export function LauncherScreen() {
             },
           ]}>
           <Text
-            style={[
-              styles.footerText,
-              {color: theme.colors.textMuted, fontFamily: theme.fonts.ui},
-            ]}
+            style={[styles.footerText, {color: theme.colors.textMuted}]}
             numberOfLines={1}>
             {notice.text}
           </Text>
@@ -692,10 +879,7 @@ export function LauncherScreen() {
             },
           ]}>
           <Text
-            style={[
-              styles.footerText,
-              {color: theme.colors.textMuted, fontFamily: theme.fonts.ui},
-            ]}
+            style={[styles.footerText, {color: theme.colors.textMuted}]}
             numberOfLines={1}>
             {prompt.text}
           </Text>
@@ -709,10 +893,7 @@ export function LauncherScreen() {
           style={[styles.footer, {paddingHorizontal: theme.spacing.gutter}]}
           pointerEvents="none">
           <Text
-            style={[
-              styles.footerText,
-              {color: theme.colors.textMuted, fontFamily: theme.fonts.ui},
-            ]}
+            style={[styles.footerText, {color: theme.colors.textMuted}]}
             numberOfLines={1}>
             Swipe up for all apps
           </Text>

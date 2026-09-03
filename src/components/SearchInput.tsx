@@ -44,7 +44,7 @@ function SearchInputComponent({
         placeholderTextColor={theme.colors.textSecondary}
         style={[
           styles.input,
-          {color: theme.colors.text, fontFamily: theme.fonts.ui},
+          {color: theme.colors.text},
         ]}
         // Open ready to type, and stay open after the action key so a mistyped
         // query can be corrected without tapping back into the field.

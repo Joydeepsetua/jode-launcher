@@ -41,6 +41,7 @@ class LauncherModule(reactContext: ReactApplicationContext) : NativeLauncherSpec
   private val recentApps = RecentApps(reactContext.applicationContext)
   private val screenTime = ScreenTime(reactContext.applicationContext)
   private val setupState = SetupState(reactContext.applicationContext)
+  private val preferences = Preferences(reactContext.applicationContext)
 
   private val executor: ExecutorService =
       Executors.newFixedThreadPool(WORKER_THREADS) { runnable ->
@@ -231,6 +232,22 @@ class LauncherModule(reactContext: ReactApplicationContext) : NativeLauncherSpec
 
   override fun completeSetup() {
     setupState.markComplete()
+  }
+
+  // endregion
+
+  // region Settings
+
+  override fun getThemeMode(): String = preferences.themeMode()
+
+  override fun setThemeMode(mode: String) {
+    preferences.setThemeMode(mode)
+  }
+
+  override fun getScrimOpacity(): Double = preferences.scrimOpacity()
+
+  override fun setScrimOpacity(value: Double) {
+    preferences.setScrimOpacity(value)
   }
 
   // endregion

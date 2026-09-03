@@ -75,6 +75,19 @@ export interface Spec extends TurboModule {
   completeSetup(): void;
 
   /**
+   * The appearance the user chose on the settings screen: `system`, `dark` or
+   * `light`. Synchronous, because the first frame has to be the chosen one.
+   */
+  getThemeMode(): string;
+
+  setThemeMode(mode: string): void;
+
+  /** How much wash sits over the wallpaper, from 0 (none) to 1 (opaque). */
+  getScrimOpacity(): number;
+
+  setScrimOpacity(value: number): void;
+
+  /**
    * Whether the app currently holds the device-admin `force-lock` policy, which
    * is the only way Android lets an app turn the display off.
    */

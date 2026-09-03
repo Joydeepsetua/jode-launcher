@@ -27,7 +27,9 @@ const toAppInfo = (raw: NativeAppInfo): AppInfo => ({
  *
  * @param forceRefresh re-query PackageManager instead of using the native cache.
  */
-export async function getInstalledApps(forceRefresh = false): Promise<AppInfo[]> {
+export async function getInstalledApps(
+  forceRefresh = false,
+): Promise<AppInfo[]> {
   const raw = forceRefresh
     ? await NativeLauncher.refreshInstalledApps()
     : await NativeLauncher.getInstalledApps();
@@ -138,6 +140,60 @@ export function completeSetup(): void {
   }
 }
 
+/** The appearances the settings screen offers, and the stored value's domain. */
+export type ThemeMode = 'system' | 'dark' | 'light';
+
+const THEME_MODES: readonly ThemeMode[] = ['system', 'dark', 'light'];
+
+/**
+ * The stored appearance, or `system` when nothing has been chosen — and also
+ * when the store holds something this build does not recognise, so a value
+ * written by a later version cannot leave the launcher without a theme.
+ */
+export function getThemeMode(): ThemeMode {
+  try {
+    const stored = NativeLauncher.getThemeMode() as ThemeMode;
+    return THEME_MODES.includes(stored) ? stored : 'system';
+  } catch {
+    return 'system';
+  }
+}
+
+/** Remembers the chosen appearance. */
+export function setThemeMode(mode: ThemeMode): void {
+  try {
+    NativeLauncher.setThemeMode(mode);
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[launcher] could not persist the theme mode', error);
+    }
+  }
+}
+
+/**
+ * The stored wash over the wallpaper, clamped to 0..1. Defaults to none: the
+ * launcher shows the wallpaper as the user set it until they ask otherwise.
+ */
+export function getScrimOpacity(): number {
+  try {
+    const stored = NativeLauncher.getScrimOpacity();
+    return Number.isFinite(stored) ? Math.min(Math.max(stored, 0), 1) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** Remembers how much wash to lay over the wallpaper. */
+export function setScrimOpacity(value: number): void {
+  try {
+    NativeLauncher.setScrimOpacity(Math.min(Math.max(value, 0), 1));
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[launcher] could not persist the scrim opacity', error);
+    }
+  }
+}
+
 /**
  * Whether double tap to lock is available — that is, whether the user has
  * granted the device-admin lock policy. Synchronous and cheap.
@@ -198,11 +254,15 @@ export function requestDefaultLauncher(): void {
 }
 
 /** Fires when a package is installed, replaced or removed. */
-export function addAppsChangedListener(listener: () => void): EventSubscription {
+export function addAppsChangedListener(
+  listener: () => void,
+): EventSubscription {
   return NativeLauncher.onAppsChanged(listener);
 }
 
 /** Fires when HOME is pressed while the launcher is already in the foreground. */
-export function addHomePressedListener(listener: () => void): EventSubscription {
+export function addHomePressedListener(
+  listener: () => void,
+): EventSubscription {
   return NativeLauncher.onHomePressed(listener);
 }
