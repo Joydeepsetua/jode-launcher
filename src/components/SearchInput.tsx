@@ -6,7 +6,17 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import {useTheme} from '../theme';
+import {typeStyle, useTheme} from '../theme';
+
+/**
+ * The sizes the field is drawn at, before the user's scale is applied.
+ *
+ * The field sits above the 21pt result rows, so that it still reads as the
+ * thing you type into rather than as the first item in the list — but only
+ * just: the query is a means to the results, not the point of the screen. The
+ * two move together under the user's scale, so that stays true at every size.
+ */
+const SIZE = {input: 23, clear: 28} as const;
 
 /** Imperative handle on the search field, used to restore focus. */
 export type SearchInputHandle = React.ComponentRef<typeof TextInput>;
@@ -44,6 +54,7 @@ function SearchInputComponent({
         placeholderTextColor={theme.colors.textSecondary}
         style={[
           styles.input,
+          typeStyle(theme, SIZE.input),
           {color: theme.colors.text},
         ]}
         // Open ready to type, and stay open after the action key so a mistyped
@@ -74,7 +85,12 @@ function SearchInputComponent({
           accessibilityLabel="Clear search"
           hitSlop={16}
           style={({pressed}) => [styles.clear, {opacity: pressed ? 0.4 : 1}]}>
-          <Text style={[styles.clearGlyph, {color: theme.colors.textSecondary}]}>
+          <Text
+            style={[
+              styles.clearGlyph,
+              typeStyle(theme, SIZE.clear),
+              {color: theme.colors.textSecondary},
+            ]}>
             ×
           </Text>
         </Pressable>
@@ -90,10 +106,6 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    // Above the 21pt result rows, so the field still reads as the thing you
-    // type into rather than the first item in the list, but only just — the
-    // query is a means to the results, not the point of the screen.
-    fontSize: 23,
     // A display face carries its own spacing; the negative tracking that suited
     // Roboto here only crowds it.
     letterSpacing: 0,
@@ -108,8 +120,6 @@ const styles = StyleSheet.create({
     paddingLeft: 16,
   },
   clearGlyph: {
-    fontSize: 28,
-    lineHeight: 32,
     includeFontPadding: false,
   },
 });

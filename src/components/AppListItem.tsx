@@ -1,7 +1,10 @@
 import React, {memo, useCallback} from 'react';
 import {Pressable, StyleSheet, Text} from 'react-native';
-import {useTheme} from '../theme';
+import {typeStyle, useTheme} from '../theme';
 import type {SearchResult} from '../types/app';
+
+/** The size a name is drawn at, before the user's scale is applied. */
+const SIZE_NAME = 21;
 
 type Props = {
   result: SearchResult;
@@ -45,6 +48,7 @@ function AppListItemComponent({result, onPress}: Props) {
       <Text
         style={[
           styles.name,
+          typeStyle(theme, SIZE_NAME),
           {color: theme.colors.textSecondary},
         ]}
         numberOfLines={1}
@@ -62,7 +66,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   name: {
-    fontSize: 21,
     letterSpacing: 0.1,
     includeFontPadding: false,
   },

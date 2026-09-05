@@ -250,6 +250,18 @@ class LauncherModule(reactContext: ReactApplicationContext) : NativeLauncherSpec
     preferences.setScrimOpacity(value)
   }
 
+  override fun getFontFamily(): String = preferences.fontFamily()
+
+  override fun setFontFamily(family: String) {
+    preferences.setFontFamily(family)
+  }
+
+  override fun getFontScale(): Double = preferences.fontScale()
+
+  override fun setFontScale(value: Double) {
+    preferences.setFontScale(value)
+  }
+
   // endregion
 
   // region Screen lock

@@ -2,8 +2,10 @@ import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   AppState,
   BackHandler,
+  Linking,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
@@ -20,8 +22,8 @@ import {
   requestLockScreenPermission,
   requestUsageAccess,
 } from '../native/LauncherModule';
-import {usePreferences, type ThemeMode} from '../preferences';
-import {SCRIM_STEPS, useTheme, type Theme} from '../theme';
+import {usePreferences, type FontFamily, type ThemeMode} from '../preferences';
+import {FONT_SCALES, SCRIM_STEPS, useTheme, type Theme} from '../theme';
 
 /** A permission the launcher can use but never requires. */
 type Permission = {
@@ -46,6 +48,115 @@ const THEME_CHOICES: readonly Choice<ThemeMode>[] = [
   {value: 'system', label: 'System', icon: 'contrast'},
   {value: 'dark', label: 'Dark', icon: 'moon'},
   {value: 'light', label: 'Light', icon: 'sun'},
+];
+
+const TYPEFACE_CHOICES: readonly Choice<FontFamily>[] = [
+  {value: 'system', label: 'System'},
+  {value: 'serif', label: 'Serif'},
+  {value: 'mono', label: 'Mono'},
+  {value: 'condensed', label: 'Narrow'},
+];
+
+/** One label per step in {@link FONT_SCALES}, in the same order. */
+const SIZE_LABELS = ['Small', 'Default', 'Large', 'Huge'] as const;
+
+const SIZE_CHOICES: readonly Choice<number>[] = FONT_SCALES.map(
+  (scale, position) => ({
+    value: scale,
+    label: SIZE_LABELS[position] ?? `${Math.round(scale * 100)}%`,
+  }),
+);
+
+/**
+ * The two documents the Play listing is required to point at, served as static
+ * pages from the repository rather than from anywhere this app talks to. The
+ * launcher makes no network requests of its own; opening one of these hands the
+ * address to the browser and is the only time anything leaves the device.
+ */
+const PRIVACY_URL =
+  'https://joydeepsetua.github.io/jode-launcher/privacy-policy.html';
+const TERMS_URL = 'https://joydeepsetua.github.io/jode-launcher/terms.html';
+
+/** The listing, addressed to a browser and to the Play Store app in turn. */
+const LISTING_URL =
+  'https://play.google.com/store/apps/details?id=com.zypido.jode';
+const LISTING_APP_URL = 'market://details?id=com.zypido.jode';
+
+/**
+ * Hands an address to whatever the device opens it with.
+ *
+ * A failure here is a device with nothing willing to open the link — no
+ * browser, or a work profile that forbids it. There is nothing this screen can
+ * do about that and nothing useful it could say, so the tap does nothing rather
+ * than raising a dialog about it.
+ */
+function openUrl(url: string): void {
+  Linking.openURL(url).catch(error => {
+    if (__DEV__) {
+      console.warn(`[settings] could not open ${url}`, error);
+    }
+  });
+}
+
+/**
+ * The listing in the Play Store app, or in a browser on a device that has no
+ * Play Store — which is every sideloaded install, and the case where sending
+ * the user to a `market://` address they cannot open would be the whole of what
+ * the row did.
+ */
+function rate(): void {
+  Linking.openURL(LISTING_APP_URL).catch(() => openUrl(LISTING_URL));
+}
+
+/** The system share sheet, with the listing to send on. */
+function share(): void {
+  Share.share({
+    message: `JODE Launcher — a home screen that is just a search box.\n${LISTING_URL}`,
+  }).catch(error => {
+    if (__DEV__) {
+      console.warn('[settings] could not open the share sheet', error);
+    }
+  });
+}
+
+/** A row that leaves the app: the last group on the screen. */
+type Destination = {
+  key: string;
+  title: string;
+  body: string;
+  icon: IconName;
+  open: () => void;
+};
+
+const DESTINATIONS: readonly Destination[] = [
+  {
+    key: 'privacy',
+    title: 'Privacy policy',
+    body: 'What the launcher reads, and everything it does not.',
+    icon: 'shield',
+    open: () => openUrl(PRIVACY_URL),
+  },
+  {
+    key: 'terms',
+    title: 'Terms & conditions',
+    body: 'The terms the app is offered under.',
+    icon: 'fileText',
+    open: () => openUrl(TERMS_URL),
+  },
+  {
+    key: 'share',
+    title: 'Share JODE',
+    body: 'Send the app on to someone who would use it.',
+    icon: 'share',
+    open: share,
+  },
+  {
+    key: 'rate',
+    title: 'Rate JODE',
+    body: 'Leave a review on the Play Store.',
+    icon: 'star',
+    open: rate,
+  },
 ];
 
 /**
@@ -78,22 +189,27 @@ const WASH_CHOICES: readonly Choice<number>[] = SCRIM_STEPS.map(
 );
 
 /**
- * Which stop a stored wash is on.
+ * The stop a stored number is nearest to.
  *
- * A value that is not one of the stops — one an older build wrote, or one the
- * steps were later moved away from — reads as the nearest stop rather than as
- * an error, so the slider always has somewhere to put its thumb.
+ * Both the wash and the text size are stored as the thing itself rather than as
+ * a position, so what is on disk need not be one of the stops on offer: an
+ * older build wrote it, or the stops have since moved. Rounding to the nearest
+ * one keeps a segment lit in either case, where matching exactly would light
+ * none and read as a setting with no value at all.
  */
-function nearestStep(opacity: number): number {
-  let best = 0;
+function nearestChoice(
+  choices: readonly Choice<number>[],
+  value: number,
+): number {
+  let best = choices[0]?.value ?? 0;
   let gap = Number.POSITIVE_INFINITY;
-  SCRIM_STEPS.forEach((step, position) => {
-    const distance = Math.abs(step - opacity);
+  for (const choice of choices) {
+    const distance = Math.abs(choice.value - value);
     if (distance < gap) {
-      best = position;
+      best = choice.value;
       gap = distance;
     }
-  });
+  }
   return best;
 }
 
@@ -118,8 +234,16 @@ export function SettingsScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const {themeMode, scrimOpacity, setThemeMode, setScrimOpacity} =
-    usePreferences();
+  const {
+    themeMode,
+    scrimOpacity,
+    fontFamily,
+    fontScale,
+    setThemeMode,
+    setScrimOpacity,
+    setFontFamily,
+    setFontScale,
+  } = usePreferences();
 
   const [usageAccess, setUsageAccess] = useState(hasUsageAccess);
   const [isDefault, setIsDefault] = useState(isDefaultLauncher);
@@ -193,11 +317,11 @@ export function SettingsScreen() {
     [isDefault, usageAccess, canLock],
   );
 
-  // A segment's value is the opacity to store, so choosing one needs nothing in
-  // between. Reading goes the long way round: what is stored need not be on a
-  // stop — an older build's value, or one the steps have moved away from — so
-  // the lit segment is the nearest stop rather than an exact match.
-  const wash = WASH_CHOICES[nearestStep(scrimOpacity)]?.value ?? 0;
+  // A segment's value is the thing to store, so choosing one needs nothing in
+  // between — the setters below take it as it comes. Only reading goes the long
+  // way round, through the nearest stop.
+  const wash = nearestChoice(WASH_CHOICES, scrimOpacity);
+  const size = nearestChoice(SIZE_CHOICES, fontScale);
 
   return (
     <View
@@ -358,6 +482,95 @@ export function SettingsScreen() {
                 name="wallpaper wash"
               />
             </View>
+          </Card>
+        </Section>
+
+        <Section theme={theme} title="Text">
+          <Card theme={theme}>
+            <View style={styles.control}>
+              <View style={styles.controlHead}>
+                <View style={[styles.mark, {borderColor: theme.colors.border}]}>
+                  <Icon name="letter" size={17} color={theme.colors.text} />
+                </View>
+                <Text style={[styles.rowTitle, {color: theme.colors.text}]}>
+                  Typeface
+                </Text>
+              </View>
+              <Segmented
+                theme={theme}
+                choices={TYPEFACE_CHOICES}
+                selected={fontFamily}
+                onChange={setFontFamily}
+                name="typeface"
+              />
+            </View>
+
+            <View
+              style={[
+                styles.control,
+                styles.divided,
+                {borderTopColor: theme.colors.border},
+              ]}>
+              <View style={styles.controlHead}>
+                <View style={[styles.mark, {borderColor: theme.colors.border}]}>
+                  <Icon name="expand" size={17} color={theme.colors.text} />
+                </View>
+                <Text style={[styles.rowTitle, {color: theme.colors.text}]}>
+                  Size
+                </Text>
+              </View>
+              <Segmented
+                theme={theme}
+                choices={SIZE_CHOICES}
+                selected={size}
+                onChange={setFontScale}
+                name="text size"
+              />
+            </View>
+          </Card>
+          <Callout
+            theme={theme}
+            icon="home"
+            body="Both apply to the home screen — app names, the clock and what you type. This screen keeps its own size, so its controls stay where you left them."
+          />
+        </Section>
+
+        <Section theme={theme} title="About">
+          <Card theme={theme}>
+            {DESTINATIONS.map((destination, position) => (
+              <Pressable
+                key={destination.key}
+                onPress={destination.open}
+                accessibilityRole="button"
+                accessibilityLabel={destination.title}
+                accessibilityHint="Opens outside the launcher"
+                style={({pressed}) => [
+                  styles.row,
+                  position > 0 && [
+                    styles.divided,
+                    {borderTopColor: theme.colors.border},
+                  ],
+                  {opacity: pressed ? 0.5 : 1},
+                ]}>
+                <Tile theme={theme} icon={destination.icon} />
+                <View style={styles.rowText}>
+                  <Text style={[styles.rowTitle, {color: theme.colors.text}]}>
+                    {destination.title}
+                  </Text>
+                  <Text
+                    style={[styles.rowBody, {color: theme.colors.textMuted}]}>
+                    {destination.body}
+                  </Text>
+                </View>
+                {/* No chip on these rows: a chip states what something is set
+                    to, and none of these is set to anything. */}
+                <Icon
+                  name="chevronRight"
+                  size={16}
+                  color={theme.colors.textMuted}
+                />
+              </Pressable>
+            ))}
           </Card>
         </Section>
 

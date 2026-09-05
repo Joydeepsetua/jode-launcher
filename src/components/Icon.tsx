@@ -22,6 +22,11 @@ export type IconName =
   | 'shield'
   | 'palette'
   | 'image'
+  | 'letter'
+  | 'expand'
+  | 'fileText'
+  | 'share'
+  | 'star'
   | 'sun'
   | 'moon'
   | 'sparkle'
@@ -159,6 +164,49 @@ const SHAPES: Record<IconName, React.ReactNode> = {
       <Circle cx={12} cy={12} r={8.5} />
       <Path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" stroke="none" />
     </>
+  ),
+  // A capital A, which is what a typeface looks like when you have room for
+  // one letter of it. The crossbar sits low, where the eye expects it.
+  letter: (
+    <>
+      <Path d="M6 19.5 12 4.5l6 15" />
+      <Path d="M8.4 14h7.2" />
+    </>
+  ),
+  // Two chevrons pointing away from each other: the size of a thing, said as
+  // the direction it can move rather than as a picture of a letter, which at
+  // this size is a smudge whichever letter you pick.
+  expand: (
+    <>
+      <Path d="m8 10 4-4 4 4" />
+      <Path d="m8 14 4 4 4-4" />
+    </>
+  ),
+  // A page with the corner turned down and writing on it. The fold is what
+  // separates a document from a card, so it is drawn rather than implied.
+  fileText: (
+    <>
+      <Path d="M13.8 3.5H7.5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V8.7z" />
+      <Path d="M13.8 3.5v5.2h4.7" />
+      <Path d="M9 13.5h6M9 16.5h4" />
+    </>
+  ),
+  // Android's own share mark: one thing on the left going out to two on the
+  // right. The rings are open, like the sun in `image`, so a filled dot never
+  // has to compete with them.
+  share: (
+    <>
+      <Circle cx={17} cy={6.2} r={2} />
+      <Circle cx={7} cy={12} r={2} />
+      <Circle cx={17} cy={17.8} r={2} />
+      <Path d="M9.6 10.5 14.4 7.7" />
+      <Path d="M9.6 13.5 14.4 16.3" />
+    </>
+  ),
+  // Five points, outlined rather than filled: a filled star reads as a rating
+  // already given, and this row is an invitation to give one.
+  star: (
+    <Path d="M12 3.7 14 9.3 19.9 9.4 15.2 13 16.9 18.7 12 15.4 7.1 18.7 8.8 13 4.1 9.4 10 9.3z" />
   ),
   chevronLeft: <Path d="m14.5 5.5-7 6.5 7 6.5" />,
   chevronRight: <Path d="m9.5 5.5 7 6.5-7 6.5" />,

@@ -88,6 +88,20 @@ export interface Spec extends TurboModule {
   setScrimOpacity(value: number): void;
 
   /**
+   * The face the launcher draws its own text in: `system`, `serif`, `mono` or
+   * `condensed`. Synchronous for the same reason the theme is — the first frame
+   * has to be the one the user chose.
+   */
+  getFontFamily(): string;
+
+  setFontFamily(family: string): void;
+
+  /** What the launcher's own text sizes are multiplied by. 1 draws them as designed. */
+  getFontScale(): number;
+
+  setFontScale(value: number): void;
+
+  /**
    * Whether the app currently holds the device-admin `force-lock` policy, which
    * is the only way Android lets an app turn the display off.
    */

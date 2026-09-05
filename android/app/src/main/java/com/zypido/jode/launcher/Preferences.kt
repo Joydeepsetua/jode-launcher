@@ -49,6 +49,32 @@ internal class Preferences(context: Context) {
     write { putFloat(KEY_SCRIM_OPACITY, value.toFloat()) }
   }
 
+  /** The face the launcher draws its own text in — whatever JS last wrote. */
+  fun fontFamily(): String =
+      try {
+        preferences.getString(KEY_FONT_FAMILY, DEFAULT_FONT_FAMILY) ?: DEFAULT_FONT_FAMILY
+      } catch (e: Exception) {
+        Log.w(TAG, "could not read font family", e)
+        DEFAULT_FONT_FAMILY
+      }
+
+  fun setFontFamily(family: String) {
+    write { putString(KEY_FONT_FAMILY, family) }
+  }
+
+  /** What the launcher's own text sizes are multiplied by. */
+  fun fontScale(): Double =
+      try {
+        preferences.getFloat(KEY_FONT_SCALE, DEFAULT_FONT_SCALE).toDouble()
+      } catch (e: Exception) {
+        Log.w(TAG, "could not read font scale", e)
+        DEFAULT_FONT_SCALE.toDouble()
+      }
+
+  fun setFontScale(value: Double) {
+    write { putFloat(KEY_FONT_SCALE, value.toFloat()) }
+  }
+
   private inline fun write(edit: android.content.SharedPreferences.Editor.() -> Unit) {
     try {
       preferences.edit().apply(edit).apply()
@@ -62,9 +88,15 @@ internal class Preferences(context: Context) {
     const val STORE = "launcher_preferences"
     const val KEY_THEME_MODE = "theme_mode"
     const val KEY_SCRIM_OPACITY = "scrim_opacity"
+    const val KEY_FONT_FAMILY = "font_family"
+    const val KEY_FONT_SCALE = "font_scale"
 
     /** Follow the device, and show the wallpaper with nothing over it. */
     const val DEFAULT_THEME_MODE = "system"
     const val DEFAULT_SCRIM_OPACITY = 0f
+
+    /** The device's own face, at the size the launcher was drawn for. */
+    const val DEFAULT_FONT_FAMILY = "system"
+    const val DEFAULT_FONT_SCALE = 1f
   }
 }

@@ -194,6 +194,78 @@ export function setScrimOpacity(value: number): void {
   }
 }
 
+/** The faces the settings screen offers, and the stored value's domain. */
+export type FontFamily = 'system' | 'serif' | 'mono' | 'condensed';
+
+const FONT_FAMILIES: readonly FontFamily[] = [
+  'system',
+  'serif',
+  'mono',
+  'condensed',
+];
+
+/**
+ * The stored face, or the device's own when nothing has been chosen — and also
+ * when the store holds a name this build does not know, for the same reason
+ * {@link getThemeMode} falls back: a value written by a later version must not
+ * leave the launcher with no face at all.
+ */
+export function getFontFamily(): FontFamily {
+  try {
+    const stored = NativeLauncher.getFontFamily() as FontFamily;
+    return FONT_FAMILIES.includes(stored) ? stored : 'system';
+  } catch {
+    return 'system';
+  }
+}
+
+/** Remembers the chosen face. */
+export function setFontFamily(family: FontFamily): void {
+  try {
+    NativeLauncher.setFontFamily(family);
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[launcher] could not persist the font family', error);
+    }
+  }
+}
+
+/**
+ * What the launcher's own text sizes are multiplied by, clamped to a range
+ * either end of which is still a usable home screen. Defaults to 1: the sizes
+ * the launcher was drawn at.
+ */
+export function getFontScale(): number {
+  try {
+    const stored = NativeLauncher.getFontScale();
+    return Number.isFinite(stored) && stored > 0
+      ? Math.min(Math.max(stored, MIN_FONT_SCALE), MAX_FONT_SCALE)
+      : 1;
+  } catch {
+    return 1;
+  }
+}
+
+/** Remembers how large to draw the launcher's own text. */
+export function setFontScale(value: number): void {
+  try {
+    NativeLauncher.setFontScale(
+      Math.min(Math.max(value, MIN_FONT_SCALE), MAX_FONT_SCALE),
+    );
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[launcher] could not persist the font scale', error);
+    }
+  }
+}
+
+/**
+ * The bounds of the scale, wider than the steps the settings screen offers so
+ * that moving those steps later cannot strand a value someone already has.
+ */
+const MIN_FONT_SCALE = 0.5;
+const MAX_FONT_SCALE = 2;
+
 /**
  * Whether double tap to lock is available — that is, whether the user has
  * granted the device-admin lock policy. Synchronous and cheap.

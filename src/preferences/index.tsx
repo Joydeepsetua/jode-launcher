@@ -15,30 +15,45 @@ import React, {
   type ReactNode,
 } from 'react';
 import {
+  getFontFamily,
+  getFontScale,
   getScrimOpacity,
   getThemeMode,
+  setFontFamily as persistFontFamily,
+  setFontScale as persistFontScale,
   setScrimOpacity as persistScrimOpacity,
   setThemeMode as persistThemeMode,
+  type FontFamily,
   type ThemeMode,
 } from '../native/LauncherModule';
 
-export type {ThemeMode};
+export type {FontFamily, ThemeMode};
 
 export type Preferences = {
   /** Follow the device, or override it in one direction. */
   themeMode: ThemeMode;
   /** How much wash sits between the wallpaper and the text, from 0 to 1. */
   scrimOpacity: number;
+  /** The face the launcher draws its own text in. */
+  fontFamily: FontFamily;
+  /** What the launcher's own text sizes are multiplied by. */
+  fontScale: number;
   setThemeMode: (mode: ThemeMode) => void;
   setScrimOpacity: (value: number) => void;
+  setFontFamily: (family: FontFamily) => void;
+  setFontScale: (value: number) => void;
 };
 
 /** What the launcher looks like before anyone has been to settings. */
 const DEFAULTS: Preferences = {
   themeMode: 'system',
   scrimOpacity: 0,
+  fontFamily: 'system',
+  fontScale: 1,
   setThemeMode: () => {},
   setScrimOpacity: () => {},
+  setFontFamily: () => {},
+  setFontScale: () => {},
 };
 
 const PreferencesContext = createContext<Preferences | null>(null);
@@ -47,6 +62,8 @@ export function PreferencesProvider({children}: {children: ReactNode}) {
   const [themeMode, setThemeModeState] = useState<ThemeMode>(getThemeMode);
   const [scrimOpacity, setScrimOpacityState] =
     useState<number>(getScrimOpacity);
+  const [fontFamily, setFontFamilyState] = useState<FontFamily>(getFontFamily);
+  const [fontScale, setFontScaleState] = useState<number>(getFontScale);
 
   // State first, store second: the screen the user is looking at responds to
   // the tap, and the write that outlives the process follows behind it.
@@ -60,9 +77,37 @@ export function PreferencesProvider({children}: {children: ReactNode}) {
     persistScrimOpacity(value);
   }, []);
 
+  const setFontFamily = useCallback((family: FontFamily) => {
+    setFontFamilyState(family);
+    persistFontFamily(family);
+  }, []);
+
+  const setFontScale = useCallback((value: number) => {
+    setFontScaleState(value);
+    persistFontScale(value);
+  }, []);
+
   const value = useMemo<Preferences>(
-    () => ({themeMode, scrimOpacity, setThemeMode, setScrimOpacity}),
-    [themeMode, scrimOpacity, setThemeMode, setScrimOpacity],
+    () => ({
+      themeMode,
+      scrimOpacity,
+      fontFamily,
+      fontScale,
+      setThemeMode,
+      setScrimOpacity,
+      setFontFamily,
+      setFontScale,
+    }),
+    [
+      themeMode,
+      scrimOpacity,
+      fontFamily,
+      fontScale,
+      setThemeMode,
+      setScrimOpacity,
+      setFontFamily,
+      setFontScale,
+    ],
   );
 
   return (
