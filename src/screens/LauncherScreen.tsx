@@ -38,8 +38,9 @@ import {
   requestUsageAccess,
 } from '../native/LauncherModule';
 import type {RootStackParamList} from '../navigation/types';
+import {usePreferences} from '../preferences';
 import {useTheme} from '../theme';
-import type {SearchResult} from '../types/app';
+import type {AppInfo, SearchResult} from '../types/app';
 import {searchApps} from '../utils/appSearch';
 
 /** How long a transient failure message stays on screen. */
@@ -151,12 +152,47 @@ export function LauncherScreen() {
   // Lets the auto-launch below tell typing apart from deleting.
   const previousQueryLength = useRef(0);
 
-  const {apps: recents, usageAccess} = useRecentApps(apps);
+  // What the resting screen lists, as set on the settings screen: nothing, the
+  // apps last opened, or the ones the user picked by hand. Both lists are asked
+  // for empty when they are not the one on show, so the settings behind them —
+  // the count, the picks — are kept for when they are.
+  const {showClock, showHomeApps, homeAppSource, homeRowCount, homeAppIds} =
+    usePreferences();
+  const showsRecents = showHomeApps && homeAppSource === 'recent';
+  const {apps: recents, usageAccess} = useRecentApps(
+    apps,
+    showsRecents ? homeRowCount : 0,
+  );
 
-  /** The empty-query screen. Recents carry no match span to highlight. */
+  /**
+   * The picked apps, in the order they were picked, resolved against what is
+   * installed now — a pick whose app has since been uninstalled is dropped
+   * rather than shown as a row that cannot open anything.
+   */
+  const chosen = useMemo<AppInfo[]>(() => {
+    if (!showHomeApps || homeAppSource !== 'chosen') {
+      return [];
+    }
+    const byId = new Map(apps.map(app => [app.id, app]));
+    const picked: AppInfo[] = [];
+    for (const id of homeAppIds) {
+      const app = byId.get(id);
+      if (app !== undefined) {
+        picked.push(app);
+      }
+    }
+    return picked;
+  }, [apps, homeAppIds, homeAppSource, showHomeApps]);
+
+  /** The empty-query screen. These rows carry no match span to highlight. */
   const defaultRows = useMemo<SearchResult[]>(
-    () => recents.map(app => ({app, matchStart: -1, matchLength: 0})),
-    [recents],
+    () =>
+      (homeAppSource === 'chosen' ? chosen : recents).map(app => ({
+        app,
+        matchStart: -1,
+        matchLength: 0,
+      })),
+    [chosen, homeAppSource, recents],
   );
 
   /** Every installed app, in the alphabetical order the native side sorts it. */
@@ -439,8 +475,8 @@ export function LauncherScreen() {
    * opens the search, and the double tap that locks.
    *
    * A drag is taken away from a list mid-gesture in exactly two cases: upwards
-   * while the drawer is down — the resting screen is five rows and has nothing
-   * to scroll, so nothing is lost — and downwards from the very top of the
+   * while the drawer is down — the resting screen is a handful of rows that do
+   * not scroll, so nothing is lost — and downwards from the very top of the
    * drawer, where there is likewise nothing above to scroll to. Every other
    * drag belongs to the list under the finger.
    */
@@ -685,13 +721,24 @@ export function LauncherScreen() {
   }, [loading, error, apps.length]);
 
   const restingMessage = useMemo(() => {
+    // An empty resting screen the user asked for is not a screen with anything
+    // missing from it, so it says nothing at all: the clock and the wallpaper
+    // are the whole of what was wanted.
+    if (!showHomeApps) {
+      return null;
+    }
     if (listProblem !== undefined) {
       return listProblem;
+    }
+    // The list is the user's own and they have not filled it yet, so the way
+    // to fill it is what the screen says.
+    if (homeAppSource === 'chosen') {
+      return 'No apps chosen yet. Hold here to open settings and pick some.';
     }
     // Nothing has been opened yet — a first run, or a device where usage
     // access is off and nothing has been launched from here either.
     return 'Recently opened apps appear here. Swipe up for all apps.';
-  }, [listProblem]);
+  }, [homeAppSource, listProblem, showHomeApps]);
 
   const drawerMessage = useMemo(() => {
     if (listProblem !== undefined) {
@@ -763,8 +810,10 @@ export function LauncherScreen() {
             paddingHorizontal: theme.spacing.gutter,
           },
         ]}>
-        <View style={styles.headerTop}>
-          <Clock />
+        {/* With the clock gone the ring has nothing to be spaced away from,
+            so the row stops spreading and keeps it on the right-hand rail. */}
+        <View style={[styles.headerTop, !showClock && styles.headerTopAlone]}>
+          {showClock ? <Clock /> : null}
           <ScreenTimeRing />
         </View>
       </View>
@@ -922,6 +971,9 @@ const styles = StyleSheet.create({
     // neither — which is what lets the ring sit on the same rail as everything
     // else on the screen.
     justifyContent: 'space-between',
+  },
+  headerTopAlone: {
+    justifyContent: 'flex-end',
   },
   searchWrapper: {
     marginBottom: 14,

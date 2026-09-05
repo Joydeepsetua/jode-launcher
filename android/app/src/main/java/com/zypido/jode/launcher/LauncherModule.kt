@@ -262,6 +262,36 @@ class LauncherModule(reactContext: ReactApplicationContext) : NativeLauncherSpec
     preferences.setFontScale(value)
   }
 
+  override fun getHomeRowCount(): Double = preferences.homeRowCount()
+
+  override fun setHomeRowCount(value: Double) {
+    preferences.setHomeRowCount(value)
+  }
+
+  override fun getShowHomeApps(): Boolean = preferences.showHomeApps()
+
+  override fun setShowHomeApps(value: Boolean) {
+    preferences.setShowHomeApps(value)
+  }
+
+  override fun getShowClock(): Boolean = preferences.showClock()
+
+  override fun setShowClock(value: Boolean) {
+    preferences.setShowClock(value)
+  }
+
+  override fun getHomeAppSource(): String = preferences.homeAppSource()
+
+  override fun setHomeAppSource(source: String) {
+    preferences.setHomeAppSource(source)
+  }
+
+  override fun getHomeAppIds(): String = preferences.homeAppIds()
+
+  override fun setHomeAppIds(ids: String) {
+    preferences.setHomeAppIds(ids)
+  }
+
   // endregion
 
   // region Screen lock

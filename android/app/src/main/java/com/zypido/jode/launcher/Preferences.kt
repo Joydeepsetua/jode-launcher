@@ -75,6 +75,79 @@ internal class Preferences(context: Context) {
     write { putFloat(KEY_FONT_SCALE, value.toFloat()) }
   }
 
+  /** How many rows the home screen shows before anything has been typed. */
+  fun homeRowCount(): Double =
+      try {
+        preferences.getInt(KEY_HOME_ROW_COUNT, DEFAULT_HOME_ROW_COUNT).toDouble()
+      } catch (e: Exception) {
+        Log.w(TAG, "could not read the home row count", e)
+        DEFAULT_HOME_ROW_COUNT.toDouble()
+      }
+
+  fun setHomeRowCount(value: Double) {
+    write { putInt(KEY_HOME_ROW_COUNT, Math.round(value).toInt()) }
+  }
+
+  /** Whether the home screen lists apps at all before anything is typed. */
+  fun showHomeApps(): Boolean =
+      try {
+        preferences.getBoolean(KEY_SHOW_HOME_APPS, DEFAULT_SHOW_HOME_APPS)
+      } catch (e: Exception) {
+        Log.w(TAG, "could not read whether to show home apps", e)
+        DEFAULT_SHOW_HOME_APPS
+      }
+
+  fun setShowHomeApps(value: Boolean) {
+    write { putBoolean(KEY_SHOW_HOME_APPS, value) }
+  }
+
+  /** Whether the home screen carries the clock and the date at all. */
+  fun showClock(): Boolean =
+      try {
+        preferences.getBoolean(KEY_SHOW_CLOCK, DEFAULT_SHOW_CLOCK)
+      } catch (e: Exception) {
+        Log.w(TAG, "could not read whether to show the clock", e)
+        DEFAULT_SHOW_CLOCK
+      }
+
+  fun setShowClock(value: Boolean) {
+    write { putBoolean(KEY_SHOW_CLOCK, value) }
+  }
+
+  /** `recent` or `chosen`: where the home screen's list comes from. */
+  fun homeAppSource(): String =
+      try {
+        preferences.getString(KEY_HOME_APP_SOURCE, DEFAULT_HOME_APP_SOURCE)
+            ?: DEFAULT_HOME_APP_SOURCE
+      } catch (e: Exception) {
+        Log.w(TAG, "could not read the home app source", e)
+        DEFAULT_HOME_APP_SOURCE
+      }
+
+  fun setHomeAppSource(source: String) {
+    write { putString(KEY_HOME_APP_SOURCE, source) }
+  }
+
+  /**
+   * The apps the user chose for the home screen, newline-separated, in the
+   * order they picked them.
+   *
+   * A string rather than a string set, because a set has no order and the order
+   * is the whole of what the user arranged. Ids are `package/activity`, which
+   * cannot contain a newline, so the separator is unambiguous.
+   */
+  fun homeAppIds(): String =
+      try {
+        preferences.getString(KEY_HOME_APP_IDS, "") ?: ""
+      } catch (e: Exception) {
+        Log.w(TAG, "could not read the chosen home apps", e)
+        ""
+      }
+
+  fun setHomeAppIds(ids: String) {
+    write { putString(KEY_HOME_APP_IDS, ids) }
+  }
+
   private inline fun write(edit: android.content.SharedPreferences.Editor.() -> Unit) {
     try {
       preferences.edit().apply(edit).apply()
@@ -90,6 +163,11 @@ internal class Preferences(context: Context) {
     const val KEY_SCRIM_OPACITY = "scrim_opacity"
     const val KEY_FONT_FAMILY = "font_family"
     const val KEY_FONT_SCALE = "font_scale"
+    const val KEY_HOME_ROW_COUNT = "home_row_count"
+    const val KEY_SHOW_HOME_APPS = "show_home_apps"
+    const val KEY_SHOW_CLOCK = "show_clock"
+    const val KEY_HOME_APP_SOURCE = "home_app_source"
+    const val KEY_HOME_APP_IDS = "home_app_ids"
 
     /** Follow the device, and show the wallpaper with nothing over it. */
     const val DEFAULT_THEME_MODE = "system"
@@ -98,5 +176,17 @@ internal class Preferences(context: Context) {
     /** The device's own face, at the size the launcher was drawn for. */
     const val DEFAULT_FONT_FAMILY = "system"
     const val DEFAULT_FONT_SCALE = 1f
+
+    /** Four recents: enough to be useful, short enough to still be a clear screen. */
+    const val DEFAULT_HOME_ROW_COUNT = 4
+
+    /** The list is on until it is turned off; an empty home screen is asked for. */
+    const val DEFAULT_SHOW_HOME_APPS = true
+
+    /** The clock is there until it is turned off, as the apps are. */
+    const val DEFAULT_SHOW_CLOCK = true
+
+    /** What is on the home screen until someone picks apps for it themselves. */
+    const val DEFAULT_HOME_APP_SOURCE = "recent"
   }
 }

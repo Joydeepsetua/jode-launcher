@@ -267,6 +267,180 @@ const MIN_FONT_SCALE = 0.5;
 const MAX_FONT_SCALE = 2;
 
 /**
+ * The rows a home screen has before anyone has chosen a number: four recents,
+ * enough to be worth reading and short enough to still be a clear screen.
+ */
+export const DEFAULT_HOME_ROW_COUNT = 4;
+
+/**
+ * The bounds of the count, again wider than the steps on offer. The floor is
+ * one rather than zero: a home screen someone has set to no rows at all is
+ * indistinguishable from one that has lost its recents, and the way to an
+ * empty resting screen is to stop opening apps.
+ */
+export const MIN_HOME_ROW_COUNT = 1;
+export const MAX_HOME_ROW_COUNT = 12;
+
+/** A count as it has to be stored: a whole number of rows, inside the bounds. */
+function clampRowCount(value: number): number {
+  if (!Number.isFinite(value)) {
+    return DEFAULT_HOME_ROW_COUNT;
+  }
+  return Math.min(
+    Math.max(Math.round(value), MIN_HOME_ROW_COUNT),
+    MAX_HOME_ROW_COUNT,
+  );
+}
+
+/**
+ * How many apps the home screen lists before anything has been typed, or five
+ * when nothing has been chosen — and also when the store holds something this
+ * build cannot use, so a bad value leaves a short list rather than none.
+ */
+export function getHomeRowCount(): number {
+  try {
+    return clampRowCount(NativeLauncher.getHomeRowCount());
+  } catch {
+    return DEFAULT_HOME_ROW_COUNT;
+  }
+}
+
+/** Remembers how many apps the home screen should list. */
+export function setHomeRowCount(value: number): void {
+  try {
+    NativeLauncher.setHomeRowCount(clampRowCount(value));
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[launcher] could not persist the home row count', error);
+    }
+  }
+}
+
+/**
+ * Whether the home screen lists apps at all, or waits with nothing but the
+ * clock. On unless it has been turned off — and on again if the store cannot
+ * be read, because a launcher that silently shows no apps looks broken in a way
+ * one that shows them never does.
+ */
+export function getShowHomeApps(): boolean {
+  try {
+    return NativeLauncher.getShowHomeApps();
+  } catch {
+    return true;
+  }
+}
+
+/** Remembers whether the home screen lists apps. */
+export function setShowHomeApps(value: boolean): void {
+  try {
+    NativeLauncher.setShowHomeApps(value);
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[launcher] could not persist the home apps toggle', error);
+    }
+  }
+}
+
+/**
+ * Whether the home screen carries the clock and the date. On unless it has
+ * been turned off, and on again when the store cannot be read — for the same
+ * reason the app list is: a launcher missing the things it is meant to show
+ * reads as broken rather than as configured.
+ */
+export function getShowClock(): boolean {
+  try {
+    return NativeLauncher.getShowClock();
+  } catch {
+    return true;
+  }
+}
+
+/** Remembers whether the home screen carries the clock. */
+export function setShowClock(value: boolean): void {
+  try {
+    NativeLauncher.setShowClock(value);
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[launcher] could not persist the clock toggle', error);
+    }
+  }
+}
+
+/** Where the home screen's list comes from, and the stored value's domain. */
+export type HomeAppSource = 'recent' | 'chosen';
+
+const HOME_APP_SOURCES: readonly HomeAppSource[] = ['recent', 'chosen'];
+
+/**
+ * The stored source, or the recents when nothing has been chosen — and also
+ * when the store holds a name this build does not know, for the same reason
+ * {@link getThemeMode} falls back.
+ */
+export function getHomeAppSource(): HomeAppSource {
+  try {
+    const stored = NativeLauncher.getHomeAppSource() as HomeAppSource;
+    return HOME_APP_SOURCES.includes(stored) ? stored : 'recent';
+  } catch {
+    return 'recent';
+  }
+}
+
+/** Remembers where the home screen's list comes from. */
+export function setHomeAppSource(source: HomeAppSource): void {
+  try {
+    NativeLauncher.setHomeAppSource(source);
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[launcher] could not persist the home app source', error);
+    }
+  }
+}
+
+/**
+ * How many apps the home screen can be pinned with.
+ *
+ * A ceiling for the same reason the recents count has one, and a lower one:
+ * the resting screen does not scroll, so a list longer than the screen is a
+ * list with rows nobody can reach. Eight rows still clear the fold on a small
+ * phone at the largest text size the launcher offers.
+ */
+export const MAX_HOME_APPS = 8;
+
+/** The separator the ids are stored under. An id can never contain one. */
+const ID_SEPARATOR = '\n';
+
+/**
+ * The apps the user picked for the home screen, in the order they picked them.
+ *
+ * Empty is a legitimate answer — nothing chosen yet — and so is what an
+ * unreadable store returns, because a home screen that lists nothing is at
+ * worst a screen the user has to visit settings to fill.
+ */
+export function getHomeAppIds(): string[] {
+  try {
+    return NativeLauncher.getHomeAppIds()
+      .split(ID_SEPARATOR)
+      .filter(id => id.length > 0)
+      .slice(0, MAX_HOME_APPS);
+  } catch {
+    return [];
+  }
+}
+
+/** Remembers the chosen apps, in the given order. */
+export function setHomeAppIds(ids: readonly string[]): void {
+  try {
+    NativeLauncher.setHomeAppIds(
+      ids.slice(0, MAX_HOME_APPS).join(ID_SEPARATOR),
+    );
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[launcher] could not persist the chosen home apps', error);
+    }
+  }
+}
+
+/**
  * Whether double tap to lock is available — that is, whether the user has
  * granted the device-admin lock policy. Synchronous and cheap.
  */

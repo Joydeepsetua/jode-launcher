@@ -1,10 +1,17 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {AppState, type AppStateStatus} from 'react-native';
-import {getRecentAppIds, hasUsageAccess} from '../native/LauncherModule';
+import {
+  DEFAULT_HOME_ROW_COUNT,
+  getRecentAppIds,
+  hasUsageAccess,
+} from '../native/LauncherModule';
 import type {AppInfo} from '../types/app';
 
-/** How many rows the launcher shows before anything has been typed. */
-export const DEFAULT_ROW_COUNT = 5;
+/**
+ * How many rows the launcher shows before anything has been typed, when the
+ * user has not said otherwise on the settings screen.
+ */
+export const DEFAULT_ROW_COUNT = DEFAULT_HOME_ROW_COUNT;
 
 const NO_IDS: string[] = [];
 
@@ -15,7 +22,7 @@ const NO_IDS: string[] = [];
 let warmIds: string[] | null = null;
 
 export type RecentApps = {
-  /** Up to {@link DEFAULT_ROW_COUNT} apps, most recently opened first. */
+  /** Up to `limit` apps, most recently opened first. */
   apps: AppInfo[];
   /**
    * False while the order is only this launcher's own launches, because the
@@ -32,8 +39,14 @@ export type RecentApps = {
  * entries dropped are the ones that could not be a row in the first place — an
  * app uninstalled since it was last opened, or a package with no launchable
  * activity at all, like system UI and background services.
+ *
+ * @param limit how many rows to fill at most — the count the settings screen
+ * owns, defaulting to the five the launcher showed before it was a choice.
  */
-export function useRecentApps(apps: readonly AppInfo[]): RecentApps {
+export function useRecentApps(
+  apps: readonly AppInfo[],
+  limit: number = DEFAULT_ROW_COUNT,
+): RecentApps {
   const [ids, setIds] = useState<string[]>(() => warmIds ?? NO_IDS);
   const [usageAccess, setUsageAccess] = useState<boolean>(hasUsageAccess);
   const mounted = useRef(true);
@@ -77,11 +90,17 @@ export function useRecentApps(apps: readonly AppInfo[]): RecentApps {
   }, [load]);
 
   const resolved = useMemo(() => {
+    // A count that arrived as something other than a whole number of rows —
+    // from a store an older build wrote, say — must not empty the list, so it
+    // is read the same forgiving way the rest of the preferences are.
+    const rows = Number.isFinite(limit)
+      ? Math.max(Math.round(limit), 0)
+      : DEFAULT_ROW_COUNT;
     const byId = new Map(apps.map(app => [app.id, app]));
     const chosen: AppInfo[] = [];
 
     for (const id of ids) {
-      if (chosen.length === DEFAULT_ROW_COUNT) {
+      if (chosen.length === rows) {
         break;
       }
       const app = byId.get(id);
@@ -91,7 +110,7 @@ export function useRecentApps(apps: readonly AppInfo[]): RecentApps {
     }
 
     return chosen;
-  }, [apps, ids]);
+  }, [apps, ids, limit]);
 
   return useMemo(
     () => ({apps: resolved, usageAccess}),

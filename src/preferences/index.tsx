@@ -15,19 +15,31 @@ import React, {
   type ReactNode,
 } from 'react';
 import {
+  DEFAULT_HOME_ROW_COUNT,
   getFontFamily,
   getFontScale,
+  getHomeAppIds,
+  getHomeAppSource,
+  getHomeRowCount,
   getScrimOpacity,
+  getShowClock,
+  getShowHomeApps,
   getThemeMode,
   setFontFamily as persistFontFamily,
   setFontScale as persistFontScale,
+  setHomeAppIds as persistHomeAppIds,
+  setHomeAppSource as persistHomeAppSource,
+  setHomeRowCount as persistHomeRowCount,
   setScrimOpacity as persistScrimOpacity,
+  setShowClock as persistShowClock,
+  setShowHomeApps as persistShowHomeApps,
   setThemeMode as persistThemeMode,
   type FontFamily,
+  type HomeAppSource,
   type ThemeMode,
 } from '../native/LauncherModule';
 
-export type {FontFamily, ThemeMode};
+export type {FontFamily, HomeAppSource, ThemeMode};
 
 export type Preferences = {
   /** Follow the device, or override it in one direction. */
@@ -38,10 +50,25 @@ export type Preferences = {
   fontFamily: FontFamily;
   /** What the launcher's own text sizes are multiplied by. */
   fontScale: number;
+  /** Whether the home screen carries the clock and the date. */
+  showClock: boolean;
+  /** Whether the home screen lists apps at all before anything is typed. */
+  showHomeApps: boolean;
+  /** Where that list comes from: the apps last opened, or the ones picked. */
+  homeAppSource: HomeAppSource;
+  /** How many recents it lists, when the recents are what it lists. */
+  homeRowCount: number;
+  /** The apps picked by hand, in the order they were picked. */
+  homeAppIds: string[];
   setThemeMode: (mode: ThemeMode) => void;
   setScrimOpacity: (value: number) => void;
   setFontFamily: (family: FontFamily) => void;
   setFontScale: (value: number) => void;
+  setHomeRowCount: (value: number) => void;
+  setShowClock: (value: boolean) => void;
+  setShowHomeApps: (value: boolean) => void;
+  setHomeAppSource: (source: HomeAppSource) => void;
+  setHomeAppIds: (ids: string[]) => void;
 };
 
 /** What the launcher looks like before anyone has been to settings. */
@@ -50,10 +77,20 @@ const DEFAULTS: Preferences = {
   scrimOpacity: 0,
   fontFamily: 'system',
   fontScale: 1,
+  showClock: true,
+  showHomeApps: true,
+  homeAppSource: 'recent',
+  homeRowCount: DEFAULT_HOME_ROW_COUNT,
+  homeAppIds: [],
   setThemeMode: () => {},
   setScrimOpacity: () => {},
   setFontFamily: () => {},
   setFontScale: () => {},
+  setHomeRowCount: () => {},
+  setShowClock: () => {},
+  setShowHomeApps: () => {},
+  setHomeAppSource: () => {},
+  setHomeAppIds: () => {},
 };
 
 const PreferencesContext = createContext<Preferences | null>(null);
@@ -64,6 +101,14 @@ export function PreferencesProvider({children}: {children: ReactNode}) {
     useState<number>(getScrimOpacity);
   const [fontFamily, setFontFamilyState] = useState<FontFamily>(getFontFamily);
   const [fontScale, setFontScaleState] = useState<number>(getFontScale);
+  const [homeRowCount, setHomeRowCountState] =
+    useState<number>(getHomeRowCount);
+  const [showClock, setShowClockState] = useState<boolean>(getShowClock);
+  const [showHomeApps, setShowHomeAppsState] =
+    useState<boolean>(getShowHomeApps);
+  const [homeAppSource, setHomeAppSourceState] =
+    useState<HomeAppSource>(getHomeAppSource);
+  const [homeAppIds, setHomeAppIdsState] = useState<string[]>(getHomeAppIds);
 
   // State first, store second: the screen the user is looking at responds to
   // the tap, and the write that outlives the process follows behind it.
@@ -87,26 +132,71 @@ export function PreferencesProvider({children}: {children: ReactNode}) {
     persistFontScale(value);
   }, []);
 
+  const setHomeRowCount = useCallback((value: number) => {
+    setHomeRowCountState(value);
+    persistHomeRowCount(value);
+  }, []);
+
+  const setShowHomeApps = useCallback((value: boolean) => {
+    setShowHomeAppsState(value);
+    persistShowHomeApps(value);
+  }, []);
+
+  const setShowClock = useCallback((value: boolean) => {
+    setShowClockState(value);
+    persistShowClock(value);
+  }, []);
+
+  const setHomeAppSource = useCallback((source: HomeAppSource) => {
+    setHomeAppSourceState(source);
+    persistHomeAppSource(source);
+  }, []);
+
+  const setHomeAppIds = useCallback((ids: string[]) => {
+    setHomeAppIdsState(ids);
+    persistHomeAppIds(ids);
+  }, []);
+
   const value = useMemo<Preferences>(
     () => ({
       themeMode,
       scrimOpacity,
       fontFamily,
       fontScale,
+      showClock,
+      showHomeApps,
+      homeAppSource,
+      homeRowCount,
+      homeAppIds,
       setThemeMode,
       setScrimOpacity,
       setFontFamily,
       setFontScale,
+      setHomeRowCount,
+      setShowClock,
+      setShowHomeApps,
+      setHomeAppSource,
+      setHomeAppIds,
     }),
     [
       themeMode,
       scrimOpacity,
       fontFamily,
       fontScale,
+      showClock,
+      showHomeApps,
+      homeAppSource,
+      homeRowCount,
+      homeAppIds,
       setThemeMode,
       setScrimOpacity,
       setFontFamily,
       setFontScale,
+      setHomeRowCount,
+      setShowClock,
+      setShowHomeApps,
+      setHomeAppSource,
+      setHomeAppIds,
     ],
   );
 

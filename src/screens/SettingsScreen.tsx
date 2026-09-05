@@ -12,6 +12,7 @@ import {
   type AppStateStatus,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Icon, type IconName} from '../components/Icon';
 import {
@@ -22,7 +23,13 @@ import {
   requestLockScreenPermission,
   requestUsageAccess,
 } from '../native/LauncherModule';
-import {usePreferences, type FontFamily, type ThemeMode} from '../preferences';
+import type {RootStackParamList} from '../navigation/types';
+import {
+  usePreferences,
+  type FontFamily,
+  type HomeAppSource,
+  type ThemeMode,
+} from '../preferences';
 import {FONT_SCALES, SCRIM_STEPS, useTheme, type Theme} from '../theme';
 
 /** A permission the launcher can use but never requires. */
@@ -66,6 +73,27 @@ const SIZE_CHOICES: readonly Choice<number>[] = FONT_SCALES.map(
     label: SIZE_LABELS[position] ?? `${Math.round(scale * 100)}%`,
   }),
 );
+
+/**
+ * How many recents the home screen can be set to list.
+ *
+ * Every count in the range rather than a few stops across it: the list is
+ * short enough that one row either way is a difference the user can feel, and
+ * a number they cannot reach would be the setting refusing the only adjustment
+ * they wanted. Five is among them and is the length the launcher shipped with,
+ * so an install that has never been to this screen already lights a segment.
+ */
+const HOME_ROW_COUNTS = [2, 3, 4, 5, 6] as const;
+
+const HOME_ROW_CHOICES: readonly Choice<number>[] = HOME_ROW_COUNTS.map(
+  count => ({value: count, label: String(count)}),
+);
+
+/** Where the home screen's list comes from: the phone's answer, or the user's. */
+const HOME_SOURCE_CHOICES: readonly Choice<HomeAppSource>[] = [
+  {value: 'recent', label: 'Recent', icon: 'clock'},
+  {value: 'chosen', label: 'Chosen', icon: 'star'},
+];
 
 /**
  * The two documents the Play listing is required to point at, served as static
@@ -233,16 +261,26 @@ function nearestChoice(
 export function SettingsScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const {
     themeMode,
     scrimOpacity,
     fontFamily,
     fontScale,
+    showClock,
+    showHomeApps,
+    homeAppSource,
+    homeRowCount,
+    homeAppIds,
     setThemeMode,
     setScrimOpacity,
     setFontFamily,
     setFontScale,
+    setHomeRowCount,
+    setShowClock,
+    setShowHomeApps,
+    setHomeAppSource,
   } = usePreferences();
 
   const [usageAccess, setUsageAccess] = useState(hasUsageAccess);
@@ -322,6 +360,7 @@ export function SettingsScreen() {
   // way round, through the nearest stop.
   const wash = nearestChoice(WASH_CHOICES, scrimOpacity);
   const size = nearestChoice(SIZE_CHOICES, fontScale);
+  const rows = nearestChoice(HOME_ROW_CHOICES, homeRowCount);
 
   return (
     <View
@@ -425,6 +464,208 @@ export function SettingsScreen() {
             theme={theme}
             icon="shield"
             body="None of these is required. The launcher searches and opens apps without any of them."
+          />
+        </Section>
+
+        <Section theme={theme} title="Home screen">
+          <Card theme={theme}>
+            {/* The two switches in the order the things they govern sit on
+                the home screen — the clock at the top, the list beneath it —
+                each with its own controls under it. */}
+            <Pressable
+              onPress={() => setShowClock(!showClock)}
+              accessibilityRole="switch"
+              accessibilityState={{checked: showClock}}
+              accessibilityLabel="Show the date and time on the home screen"
+              style={({pressed}) => [styles.row, {opacity: pressed ? 0.5 : 1}]}>
+              <View style={[styles.mark, {borderColor: theme.colors.border}]}>
+                <Icon name="clock" size={17} color={theme.colors.text} />
+              </View>
+              <View style={styles.rowText}>
+                <Text style={[styles.rowTitle, {color: theme.colors.text}]}>
+                  Show date &amp; time
+                </Text>
+                <Text style={[styles.rowBody, {color: theme.colors.textMuted}]}>
+                  The clock and today's date, at the top of the home screen.
+                </Text>
+              </View>
+              <Toggle theme={theme} on={showClock} />
+            </Pressable>
+
+            <Pressable
+              onPress={() => setShowHomeApps(!showHomeApps)}
+              accessibilityRole="switch"
+              accessibilityState={{checked: showHomeApps}}
+              accessibilityLabel="Show apps on the home screen"
+              style={({pressed}) => [
+                styles.row,
+                styles.divided,
+                {
+                  borderTopColor: theme.colors.border,
+                  opacity: pressed ? 0.5 : 1,
+                },
+              ]}>
+              <View style={[styles.mark, {borderColor: theme.colors.border}]}>
+                <Icon name="list" size={17} color={theme.colors.text} />
+              </View>
+              <View style={styles.rowText}>
+                <Text style={[styles.rowTitle, {color: theme.colors.text}]}>
+                  Show apps
+                </Text>
+                <Text style={[styles.rowBody, {color: theme.colors.textMuted}]}>
+                  The list that waits below the clock. Off clears it — every app
+                  is still a swipe up away.
+                </Text>
+              </View>
+              <Toggle theme={theme} on={showHomeApps} />
+            </Pressable>
+
+            {/* Hidden rather than dimmed while the list is off: a control for
+                a list that is not there has nothing to say, and everything it
+                holds is remembered for when the list comes back. */}
+            {showHomeApps ? (
+              <View
+                style={[
+                  styles.control,
+                  styles.divided,
+                  {borderTopColor: theme.colors.border},
+                ]}>
+                <View style={styles.controlHead}>
+                  <View
+                    style={[styles.mark, {borderColor: theme.colors.border}]}>
+                    <Icon name="home" size={17} color={theme.colors.text} />
+                  </View>
+                  <View style={styles.rowText}>
+                    <Text style={[styles.rowTitle, {color: theme.colors.text}]}>
+                      What shows
+                    </Text>
+                    <Text
+                      style={[
+                        styles.rowBody,
+                        {
+                          color: theme.colors.textMuted,
+                        },
+                      ]}>
+                      The apps you opened last, or a list you pick yourself.
+                    </Text>
+                  </View>
+                </View>
+                <Segmented
+                  theme={theme}
+                  choices={HOME_SOURCE_CHOICES}
+                  selected={homeAppSource}
+                  onChange={setHomeAppSource}
+                  name="home screen list"
+                />
+              </View>
+            ) : null}
+
+            {/* One control under the other, never both: how long the recents
+                are is a question about a list of recents. */}
+            {showHomeApps && homeAppSource === 'recent' ? (
+              <View
+                style={[
+                  styles.control,
+                  styles.divided,
+                  {borderTopColor: theme.colors.border},
+                ]}>
+                <View style={styles.controlHead}>
+                  <View
+                    style={[styles.mark, {borderColor: theme.colors.border}]}>
+                    <Icon name="clock" size={17} color={theme.colors.text} />
+                  </View>
+                  <View style={styles.rowText}>
+                    <Text style={[styles.rowTitle, {color: theme.colors.text}]}>
+                      Apps shown
+                    </Text>
+                    <Text
+                      style={[
+                        styles.rowBody,
+                        {
+                          color: theme.colors.textMuted,
+                        },
+                      ]}>
+                      How many recently opened apps wait there before you type.
+                    </Text>
+                  </View>
+                </View>
+                <Segmented
+                  theme={theme}
+                  choices={HOME_ROW_CHOICES}
+                  selected={rows}
+                  onChange={setHomeRowCount}
+                  name="apps on the home screen"
+                />
+              </View>
+            ) : null}
+
+            {showHomeApps && homeAppSource === 'chosen' ? (
+              <Pressable
+                onPress={() => navigation.navigate('ChooseApps')}
+                accessibilityRole="button"
+                accessibilityLabel="Choose apps"
+                accessibilityHint="Opens the list of every app, to pick from"
+                style={({pressed}) => [
+                  styles.row,
+                  styles.divided,
+                  {
+                    borderTopColor: theme.colors.border,
+                    opacity: pressed ? 0.5 : 1,
+                  },
+                ]}>
+                <View style={[styles.mark, {borderColor: theme.colors.border}]}>
+                  <Icon name="star" size={17} color={theme.colors.text} />
+                </View>
+                <View style={styles.rowText}>
+                  <Text style={[styles.rowTitle, {color: theme.colors.text}]}>
+                    Choose apps
+                  </Text>
+                  <Text
+                    style={[styles.rowBody, {color: theme.colors.textMuted}]}>
+                    Every app, to tick the ones you want waiting on the home
+                    screen. They appear in the order you pick them.
+                  </Text>
+                </View>
+                {/* The count is the state of this row, said the way the
+                    permission rows say theirs. */}
+                <View
+                  style={[
+                    styles.chip,
+                    homeAppIds.length > 0
+                      ? {backgroundColor: theme.colors.elevated}
+                      : {backgroundColor: theme.colors.text},
+                  ]}>
+                  <Text
+                    style={[
+                      styles.chipText,
+                      {
+                        color:
+                          homeAppIds.length > 0
+                            ? theme.colors.textSecondary
+                            : theme.colors.textInverse,
+                      },
+                    ]}>
+                    {homeAppIds.length > 0 ? homeAppIds.length : 'Pick'}
+                  </Text>
+                </View>
+                <Icon
+                  name="chevronRight"
+                  size={16}
+                  color={theme.colors.textMuted}
+                />
+              </Pressable>
+            ) : null}
+          </Card>
+          <Callout
+            theme={theme}
+            icon="sparkle"
+            body={
+              !showHomeApps
+                ? 'Nothing waits on the home screen. Swipe up to search, and every app is there.'
+                : homeAppSource === 'chosen'
+                  ? 'Only the apps you tick appear, in the order you tick them. One that is uninstalled leaves the list on its own.'
+                  : 'The list fills with the apps you have opened most recently — as many of them as fit the number above, and no more.'
+            }
           />
         </Section>
 
@@ -673,6 +914,45 @@ function Segmented<T>({
 }
 
 /**
+ * A switch, drawn the way everything else here is.
+ *
+ * The platform's own would arrive with its own colours and its own idea of a
+ * corner radius, and this screen has neither a colour to give it nor a shape
+ * that would match. On is the ink the selected segment is filled with, so the
+ * two controls agree about what "this one is chosen" looks like.
+ *
+ * It is not pressable itself: the whole row is, which is a target the width of
+ * the card rather than one the width of a thumb.
+ */
+function Toggle({theme, on}: {theme: Theme; on: boolean}) {
+  return (
+    <View
+      // The row above carries the switch role and the state; a second one here
+      // would have a screen reader announce the setting twice.
+      importantForAccessibility="no-hide-descendants"
+      style={[
+        styles.toggle,
+        {
+          backgroundColor: on ? theme.colors.text : theme.colors.elevated,
+          borderColor: on ? theme.colors.text : theme.colors.border,
+        },
+      ]}>
+      <View
+        style={[
+          styles.knob,
+          on ? styles.knobOn : styles.knobOff,
+          {
+            backgroundColor: on
+              ? theme.colors.textInverse
+              : theme.colors.textMuted,
+          },
+        ]}
+      />
+    </View>
+  );
+}
+
+/**
  * The ground a group of rows shares.
  *
  * The card is what does the grouping: the label names the category from
@@ -876,6 +1156,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     marginTop: 3,
+  },
+  toggle: {
+    width: 46,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    justifyContent: 'center',
+    marginRight: 4,
+  },
+  knob: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    position: 'absolute',
+  },
+  knobOn: {
+    right: 4,
+  },
+  knobOff: {
+    left: 4,
   },
   chip: {
     paddingHorizontal: 10,

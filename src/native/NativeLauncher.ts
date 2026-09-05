@@ -102,6 +102,49 @@ export interface Spec extends TurboModule {
   setFontScale(value: number): void;
 
   /**
+   * How many apps the home screen lists before anything has been typed.
+   * Synchronous for the same reason the appearance is: the resting screen is
+   * the first frame, and a list that changes length a frame later is one the
+   * user watches redraw.
+   */
+  getHomeRowCount(): number;
+
+  setHomeRowCount(value: number): void;
+
+  /**
+   * Whether the home screen lists apps at all before anything is typed. False
+   * is a resting screen of the clock and the wallpaper alone.
+   */
+  getShowHomeApps(): boolean;
+
+  setShowHomeApps(value: boolean): void;
+
+  /**
+   * Whether the home screen carries the clock and the date. False is a screen
+   * with nothing above the app list but the wallpaper.
+   */
+  getShowClock(): boolean;
+
+  setShowClock(value: boolean): void;
+
+  /**
+   * Where the home screen's list comes from: `recent` for the apps last
+   * opened, `chosen` for the ones the user picked themselves.
+   */
+  getHomeAppSource(): string;
+
+  setHomeAppSource(source: string): void;
+
+  /**
+   * The chosen apps as one newline-separated string of `package/activity`
+   * ids, in the order they were picked — a string rather than an array so that
+   * the read stays synchronous and the order survives the store.
+   */
+  getHomeAppIds(): string;
+
+  setHomeAppIds(ids: string): void;
+
+  /**
    * Whether the app currently holds the device-admin `force-lock` policy, which
    * is the only way Android lets an app turn the display off.
    */

@@ -1,8 +1,8 @@
 /**
  * The stack the launcher sits at the bottom of.
  *
- * Settings is the only thing above it, and it arrives the way a pushed screen
- * arrives on Android — sliding in from the right — which is the platform's own
+ * Settings sits above it and the app picker above that, each arriving the way a
+ * pushed screen arrives on Android — sliding in from the right — which is the platform's own
  * transition rather than one of ours: `slide_from_right` is run natively by
  * react-native-screens, on the UI thread, and comes with the matching gesture
  * and the reverse animation on the way back for free.
@@ -10,6 +10,7 @@
 import React from 'react';
 import {NavigationContainer, DefaultTheme} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import {ChooseAppsScreen} from '../screens/ChooseAppsScreen';
 import {LauncherScreen} from '../screens/LauncherScreen';
 import {SettingsScreen} from '../screens/SettingsScreen';
 import type {RootStackParamList} from './types';
@@ -40,6 +41,7 @@ export function RootNavigator() {
         }}>
         <Stack.Screen name="Launcher" component={LauncherScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen name="ChooseApps" component={ChooseAppsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

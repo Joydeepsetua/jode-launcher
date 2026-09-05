@@ -24,6 +24,9 @@ export type IconName =
   | 'image'
   | 'letter'
   | 'expand'
+  | 'list'
+  | 'search'
+  | 'check'
   | 'fileText'
   | 'share'
   | 'star'
@@ -182,6 +185,25 @@ const SHAPES: Record<IconName, React.ReactNode> = {
       <Path d="m8 14 4 4 4-4" />
     </>
   ),
+  // Three rows, each a dot and the line it labels: a list, said as the shape a
+  // list has rather than as anything the rows contain.
+  list: (
+    <>
+      <Path d="M4.5 7h.01M4.5 12h.01M4.5 17h.01" />
+      <Path d="M9 7h10.5M9 12h10.5M9 17h10.5" />
+    </>
+  ),
+  // A lens and its handle, at the angle every magnifier since the first one
+  // has been drawn at.
+  search: (
+    <>
+      <Circle cx={11} cy={11} r={6.5} />
+      <Path d="m15.8 15.8 4 4" />
+    </>
+  ),
+  // A tick, drawn long enough that the short arm reads as deliberate rather
+  // than as a stray corner.
+  check: <Path d="m5 12.5 4.5 4.5L19 7" />,
   // A page with the corner turned down and writing on it. The fold is what
   // separates a document from a card, so it is drawn rather than implied.
   fileText: (
