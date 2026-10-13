@@ -156,8 +156,14 @@ export function LauncherScreen() {
   // apps last opened, or the ones the user picked by hand. Both lists are asked
   // for empty when they are not the one on show, so the settings behind them —
   // the count, the picks — are kept for when they are.
-  const {showClock, showHomeApps, homeAppSource, homeRowCount, homeAppIds} =
-    usePreferences();
+  const {
+    showClock,
+    showHomeApps,
+    showAppIcons,
+    homeAppSource,
+    homeRowCount,
+    homeAppIds,
+  } = usePreferences();
   const showsRecents = showHomeApps && homeAppSource === 'recent';
   const {apps: recents, usageAccess} = useRecentApps(
     apps,
@@ -689,9 +695,13 @@ export function LauncherScreen() {
 
   const renderItem = useCallback(
     ({item}: ListRenderItemInfo<SearchResult>) => (
-      <AppListItem result={item} onPress={handleLaunch} />
+      <AppListItem
+        result={item}
+        onPress={handleLaunch}
+        showIcon={showAppIcons}
+      />
     ),
-    [handleLaunch],
+    [handleLaunch, showAppIcons],
   );
 
   const keyExtractor = useCallback((item: SearchResult) => item.app.id, []);

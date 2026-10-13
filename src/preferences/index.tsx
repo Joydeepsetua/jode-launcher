@@ -22,6 +22,7 @@ import {
   getHomeAppSource,
   getHomeRowCount,
   getScrimOpacity,
+  getShowAppIcons,
   getShowClock,
   getShowHomeApps,
   getThemeMode,
@@ -31,6 +32,7 @@ import {
   setHomeAppSource as persistHomeAppSource,
   setHomeRowCount as persistHomeRowCount,
   setScrimOpacity as persistScrimOpacity,
+  setShowAppIcons as persistShowAppIcons,
   setShowClock as persistShowClock,
   setShowHomeApps as persistShowHomeApps,
   setThemeMode as persistThemeMode,
@@ -54,6 +56,8 @@ export type Preferences = {
   showClock: boolean;
   /** Whether the home screen lists apps at all before anything is typed. */
   showHomeApps: boolean;
+  /** Whether app rows carry the app's own icon beside its name. */
+  showAppIcons: boolean;
   /** Where that list comes from: the apps last opened, or the ones picked. */
   homeAppSource: HomeAppSource;
   /** How many recents it lists, when the recents are what it lists. */
@@ -67,6 +71,7 @@ export type Preferences = {
   setHomeRowCount: (value: number) => void;
   setShowClock: (value: boolean) => void;
   setShowHomeApps: (value: boolean) => void;
+  setShowAppIcons: (value: boolean) => void;
   setHomeAppSource: (source: HomeAppSource) => void;
   setHomeAppIds: (ids: string[]) => void;
 };
@@ -79,6 +84,7 @@ const DEFAULTS: Preferences = {
   fontScale: 1,
   showClock: true,
   showHomeApps: true,
+  showAppIcons: false,
   homeAppSource: 'recent',
   homeRowCount: DEFAULT_HOME_ROW_COUNT,
   homeAppIds: [],
@@ -89,6 +95,7 @@ const DEFAULTS: Preferences = {
   setHomeRowCount: () => {},
   setShowClock: () => {},
   setShowHomeApps: () => {},
+  setShowAppIcons: () => {},
   setHomeAppSource: () => {},
   setHomeAppIds: () => {},
 };
@@ -106,6 +113,8 @@ export function PreferencesProvider({children}: {children: ReactNode}) {
   const [showClock, setShowClockState] = useState<boolean>(getShowClock);
   const [showHomeApps, setShowHomeAppsState] =
     useState<boolean>(getShowHomeApps);
+  const [showAppIcons, setShowAppIconsState] =
+    useState<boolean>(getShowAppIcons);
   const [homeAppSource, setHomeAppSourceState] =
     useState<HomeAppSource>(getHomeAppSource);
   const [homeAppIds, setHomeAppIdsState] = useState<string[]>(getHomeAppIds);
@@ -147,6 +156,11 @@ export function PreferencesProvider({children}: {children: ReactNode}) {
     persistShowClock(value);
   }, []);
 
+  const setShowAppIcons = useCallback((value: boolean) => {
+    setShowAppIconsState(value);
+    persistShowAppIcons(value);
+  }, []);
+
   const setHomeAppSource = useCallback((source: HomeAppSource) => {
     setHomeAppSourceState(source);
     persistHomeAppSource(source);
@@ -165,6 +179,7 @@ export function PreferencesProvider({children}: {children: ReactNode}) {
       fontScale,
       showClock,
       showHomeApps,
+      showAppIcons,
       homeAppSource,
       homeRowCount,
       homeAppIds,
@@ -175,6 +190,7 @@ export function PreferencesProvider({children}: {children: ReactNode}) {
       setHomeRowCount,
       setShowClock,
       setShowHomeApps,
+      setShowAppIcons,
       setHomeAppSource,
       setHomeAppIds,
     }),
@@ -185,6 +201,7 @@ export function PreferencesProvider({children}: {children: ReactNode}) {
       fontScale,
       showClock,
       showHomeApps,
+      showAppIcons,
       homeAppSource,
       homeRowCount,
       homeAppIds,
@@ -195,6 +212,7 @@ export function PreferencesProvider({children}: {children: ReactNode}) {
       setHomeRowCount,
       setShowClock,
       setShowHomeApps,
+      setShowAppIcons,
       setHomeAppSource,
       setHomeAppIds,
     ],

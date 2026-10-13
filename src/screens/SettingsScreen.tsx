@@ -270,6 +270,7 @@ export function SettingsScreen() {
     fontScale,
     showClock,
     showHomeApps,
+    showAppIcons,
     homeAppSource,
     homeRowCount,
     homeAppIds,
@@ -280,6 +281,7 @@ export function SettingsScreen() {
     setHomeRowCount,
     setShowClock,
     setShowHomeApps,
+    setShowAppIcons,
     setHomeAppSource,
   } = usePreferences();
 
@@ -723,6 +725,34 @@ export function SettingsScreen() {
                 name="wallpaper wash"
               />
             </View>
+
+            <Pressable
+              onPress={() => setShowAppIcons(!showAppIcons)}
+              accessibilityRole="switch"
+              accessibilityState={{checked: showAppIcons}}
+              accessibilityLabel="Show app icons"
+              style={({pressed}) => [
+                styles.row,
+                styles.divided,
+                {
+                  borderTopColor: theme.colors.border,
+                  opacity: pressed ? 0.5 : 1,
+                },
+              ]}>
+              <View style={[styles.mark, {borderColor: theme.colors.border}]}>
+                <Icon name="grid" size={17} color={theme.colors.text} />
+              </View>
+              <View style={styles.rowText}>
+                <Text style={[styles.rowTitle, {color: theme.colors.text}]}>
+                  Show app icons
+                </Text>
+                <Text style={[styles.rowBody, {color: theme.colors.textMuted}]}>
+                  Each app's own icon beside its name, on the home screen and
+                  in search.
+                </Text>
+              </View>
+              <Toggle theme={theme} on={showAppIcons} />
+            </Pressable>
           </Card>
         </Section>
 

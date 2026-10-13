@@ -37,6 +37,38 @@ export async function getInstalledApps(
 }
 
 /**
+ * Icon URIs already asked for, by app id. The promise is what is kept, so rows
+ * that mount together while a render is still in flight share the one render.
+ */
+const iconRequests = new Map<string, Promise<string | null>>();
+
+/**
+ * The app's icon as a `file://` URI, or null when there is none to draw. Never
+ * throws: a missing icon is a row with a name and no picture, not an error.
+ */
+export function getAppIcon(app: AppInfo): Promise<string | null> {
+  let request = iconRequests.get(app.id);
+  if (request === undefined) {
+    request = NativeLauncher.getAppIcon(app.packageName, app.activityName).catch(
+      error => {
+        iconRequests.delete(app.id);
+        if (__DEV__) {
+          console.warn(`[launcher] could not load the icon of ${app.id}`, error);
+        }
+        return null;
+      },
+    );
+    iconRequests.set(app.id, request);
+  }
+  return request;
+}
+
+/** Forgets every icon URI, so the next request picks up an updated app's new one. */
+export function clearAppIconCache(): void {
+  iconRequests.clear();
+}
+
+/**
  * Launches an app. Resolves `false` when it could not be started — uninstalled,
  * disabled, or missing a launch intent — and never throws for those cases, so
  * callers can treat a failed launch as ordinary UI state.
@@ -362,6 +394,30 @@ export function setShowClock(value: boolean): void {
   } catch (error) {
     if (__DEV__) {
       console.warn('[launcher] could not persist the clock toggle', error);
+    }
+  }
+}
+
+/**
+ * Whether app rows carry the app's own icon. Off unless it has been turned on,
+ * and off again when the store cannot be read: names alone are the launcher as
+ * it was drawn.
+ */
+export function getShowAppIcons(): boolean {
+  try {
+    return NativeLauncher.getShowAppIcons();
+  } catch {
+    return false;
+  }
+}
+
+/** Remembers whether app rows carry icons. */
+export function setShowAppIcons(value: boolean): void {
+  try {
+    NativeLauncher.setShowAppIcons(value);
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[launcher] could not persist the app icons toggle', error);
     }
   }
 }

@@ -30,6 +30,7 @@ import {Icon} from '../components/Icon';
 import {useInstalledApps} from '../hooks/useInstalledApps';
 import {MAX_HOME_APPS} from '../native/LauncherModule';
 import {usePreferences} from '../preferences';
+import {AppIcon} from '../components/AppIcon';
 import {useTheme, type Theme} from '../theme';
 import type {AppInfo} from '../types/app';
 import {searchApps} from '../utils/appSearch';
@@ -49,7 +50,7 @@ export function ChooseAppsScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const {homeAppIds, setHomeAppIds} = usePreferences();
+  const {homeAppIds, setHomeAppIds, showAppIcons} = usePreferences();
   const {apps, index, loading, error} = useInstalledApps();
   const [query, setQuery] = useState('');
 
@@ -107,10 +108,11 @@ export function ChooseAppsScreen() {
         theme={theme}
         row={item}
         divided={position > 0}
+        showIcon={showAppIcons}
         onPress={toggle}
       />
     ),
-    [theme, toggle],
+    [theme, toggle, showAppIcons],
   );
 
   const keyExtractor = useCallback((row: Row) => row.app.id, []);
@@ -247,11 +249,13 @@ function AppRow({
   theme,
   row,
   divided,
+  showIcon,
   onPress,
 }: {
   theme: Theme;
   row: Row;
   divided: boolean;
+  showIcon: boolean;
   onPress: (app: AppInfo) => void;
 }) {
   const {app, chosen, enabled} = row;
@@ -272,6 +276,11 @@ function AppRow({
         divided && [styles.divided, {borderTopColor: theme.colors.border}],
         {opacity: pressed ? 0.5 : enabled ? 1 : 0.4},
       ]}>
+      {showIcon ? (
+        <View style={styles.icon}>
+          <AppIcon app={app} size={28} />
+        </View>
+      ) : null}
       <Text
         style={[styles.name, {color: theme.colors.text}]}
         numberOfLines={1}
@@ -362,6 +371,9 @@ const styles = StyleSheet.create({
   },
   divided: {
     borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  icon: {
+    marginRight: 14,
   },
   name: {
     flex: 1,

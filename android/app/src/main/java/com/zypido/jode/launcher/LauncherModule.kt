@@ -42,6 +42,7 @@ class LauncherModule(reactContext: ReactApplicationContext) : NativeLauncherSpec
   private val screenTime = ScreenTime(reactContext.applicationContext)
   private val setupState = SetupState(reactContext.applicationContext)
   private val preferences = Preferences(reactContext.applicationContext)
+  private val appIcons = AppIcons(reactContext.applicationContext)
 
   private val executor: ExecutorService =
       Executors.newFixedThreadPool(WORKER_THREADS) { runnable ->
@@ -59,6 +60,9 @@ class LauncherModule(reactContext: ReactApplicationContext) : NativeLauncherSpec
       object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
           repository.invalidate()
+          intent?.data?.schemeSpecificPart?.let { packageName ->
+            runCatching { executor.execute { appIcons.forget(packageName) } }
+          }
           emitSafely { emitOnAppsChanged() }
         }
       }
@@ -101,6 +105,10 @@ class LauncherModule(reactContext: ReactApplicationContext) : NativeLauncherSpec
       )
     }
     return array
+  }
+
+  override fun getAppIcon(packageName: String, activityName: String, promise: Promise) {
+    submit(promise) { promise.resolve(appIcons.uri(packageName, activityName)) }
   }
 
   // endregion
@@ -278,6 +286,12 @@ class LauncherModule(reactContext: ReactApplicationContext) : NativeLauncherSpec
 
   override fun setShowClock(value: Boolean) {
     preferences.setShowClock(value)
+  }
+
+  override fun getShowAppIcons(): Boolean = preferences.showAppIcons()
+
+  override fun setShowAppIcons(value: Boolean) {
+    preferences.setShowAppIcons(value)
   }
 
   override fun getHomeAppSource(): String = preferences.homeAppSource()

@@ -1,6 +1,10 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {AppState, type AppStateStatus} from 'react-native';
-import {addAppsChangedListener, getInstalledApps} from '../native/LauncherModule';
+import {
+  addAppsChangedListener,
+  clearAppIconCache,
+  getInstalledApps,
+} from '../native/LauncherModule';
 import {buildSearchIndex} from '../utils/appSearch';
 import type {AppInfo, IndexedApp} from '../types/app';
 
@@ -77,6 +81,8 @@ export function useInstalledApps(): InstalledApps {
     load(false);
 
     const packages = addAppsChangedListener(() => {
+      // An updated app may have shipped a new icon under a new file.
+      clearAppIconCache();
       load(true);
     });
 

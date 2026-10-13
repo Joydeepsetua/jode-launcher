@@ -114,6 +114,19 @@ internal class Preferences(context: Context) {
     write { putBoolean(KEY_SHOW_CLOCK, value) }
   }
 
+  /** Whether app rows carry the app's own icon beside the name. */
+  fun showAppIcons(): Boolean =
+      try {
+        preferences.getBoolean(KEY_SHOW_APP_ICONS, DEFAULT_SHOW_APP_ICONS)
+      } catch (e: Exception) {
+        Log.w(TAG, "could not read whether to show app icons", e)
+        DEFAULT_SHOW_APP_ICONS
+      }
+
+  fun setShowAppIcons(value: Boolean) {
+    write { putBoolean(KEY_SHOW_APP_ICONS, value) }
+  }
+
   /** `recent` or `chosen`: where the home screen's list comes from. */
   fun homeAppSource(): String =
       try {
@@ -166,6 +179,7 @@ internal class Preferences(context: Context) {
     const val KEY_HOME_ROW_COUNT = "home_row_count"
     const val KEY_SHOW_HOME_APPS = "show_home_apps"
     const val KEY_SHOW_CLOCK = "show_clock"
+    const val KEY_SHOW_APP_ICONS = "show_app_icons"
     const val KEY_HOME_APP_SOURCE = "home_app_source"
     const val KEY_HOME_APP_IDS = "home_app_ids"
 
@@ -185,6 +199,9 @@ internal class Preferences(context: Context) {
 
     /** The clock is there until it is turned off, as the apps are. */
     const val DEFAULT_SHOW_CLOCK = true
+
+    /** Names alone until icons are asked for: the launcher is read, not scanned. */
+    const val DEFAULT_SHOW_APP_ICONS = false
 
     /** What is on the home screen until someone picks apps for it themselves. */
     const val DEFAULT_HOME_APP_SOURCE = "recent"

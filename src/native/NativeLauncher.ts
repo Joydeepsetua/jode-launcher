@@ -39,6 +39,12 @@ export interface Spec extends TurboModule {
   refreshInstalledApps(): Promise<NativeAppInfo[]>;
 
   /**
+   * A `file://` URI of the app's icon, rendered to a PNG in the cache directory
+   * on first request. Null when the app has gone or has nothing to draw.
+   */
+  getAppIcon(packageName: string, activityName: string): Promise<string | null>;
+
+  /**
    * Starts the given launcher activity. Resolves `false` when the app is no
    * longer installed or exposes no usable launch intent; rejects only on
    * unexpected platform failures.
@@ -126,6 +132,11 @@ export interface Spec extends TurboModule {
   getShowClock(): boolean;
 
   setShowClock(value: boolean): void;
+
+  /** Whether app rows carry the app's own icon beside its name. */
+  getShowAppIcons(): boolean;
+
+  setShowAppIcons(value: boolean): void;
 
   /**
    * Where the home screen's list comes from: `recent` for the apps last

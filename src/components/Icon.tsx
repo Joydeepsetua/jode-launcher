@@ -25,6 +25,7 @@ export type IconName =
   | 'letter'
   | 'expand'
   | 'list'
+  | 'grid'
   | 'search'
   | 'check'
   | 'fileText'
@@ -191,6 +192,15 @@ const SHAPES: Record<IconName, React.ReactNode> = {
     <>
       <Path d="M4.5 7h.01M4.5 12h.01M4.5 17h.01" />
       <Path d="M9 7h10.5M9 12h10.5M9 17h10.5" />
+    </>
+  ),
+  // Four rounded tiles: the shape a screen of app icons has.
+  grid: (
+    <>
+      <Rect x={4} y={4} width={6.5} height={6.5} rx={1.6} />
+      <Rect x={13.5} y={4} width={6.5} height={6.5} rx={1.6} />
+      <Rect x={4} y={13.5} width={6.5} height={6.5} rx={1.6} />
+      <Rect x={13.5} y={13.5} width={6.5} height={6.5} rx={1.6} />
     </>
   ),
   // A lens and its handle, at the angle every magnifier since the first one
