@@ -156,15 +156,15 @@ export interface Spec extends TurboModule {
   setHomeAppIds(ids: string): void;
 
   /**
-   * Whether the app currently holds the device-admin `force-lock` policy, which
-   * is the only way Android lets an app turn the display off.
+   * Whether the app can turn the display off: its accessibility service is
+   * switched on. Always false below Android 9.
    */
   canLockScreen(): boolean;
 
-  /** Turns the display off. False when the policy is not held. */
+  /** Turns the display off. False when the lock is not allowed. */
   lockScreen(): boolean;
 
-  /** Opens the system's device-admin request for the lock policy. */
+  /** Opens Accessibility settings, where the lock service is switched on. */
   requestLockScreenPermission(): void;
 
   /** Whether this app is currently the system default Home app. */

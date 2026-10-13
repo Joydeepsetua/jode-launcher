@@ -17,6 +17,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Icon, type IconName} from '../components/Icon';
 import {
   canLockScreen,
+  isLockScreenSupported,
   hasUsageAccess,
   isDefaultLauncher,
   requestDefaultLauncher,
@@ -345,14 +346,20 @@ export function SettingsScreen() {
         icon: 'clock',
         request: requestUsageAccess,
       },
-      {
-        key: 'lock',
-        title: 'Double tap to lock',
-        body: 'Turns the display off when you tap the wallpaper twice.',
-        granted: canLock,
-        icon: 'lock',
-        request: requestLockScreenPermission,
-      },
+      // Not offered below Android 9, which has no way to lock that keeps
+      // fingerprint and face unlock working.
+      ...(isLockScreenSupported
+        ? [
+            {
+              key: 'lock',
+              title: 'Double tap to lock',
+              body: 'Turns the display off when you tap the wallpaper twice. Switch JODE on in Accessibility.',
+              granted: canLock,
+              icon: 'lock',
+              request: requestLockScreenPermission,
+            } satisfies Permission,
+          ]
+        : []),
     ],
     [isDefault, usageAccess, canLock],
   );

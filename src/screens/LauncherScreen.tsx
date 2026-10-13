@@ -32,6 +32,7 @@ import {
   addHomePressedListener,
   isDefaultLauncher,
   launchApp,
+  isLockScreenSupported,
   lockScreen,
   requestDefaultLauncher,
   requestLockScreenPermission,
@@ -465,13 +466,13 @@ export function LauncherScreen() {
     const isSecondTap = now - lastTap.current <= DOUBLE_TAP_MS;
     lastTap.current = isSecondTap ? 0 : now;
 
-    if (!isSecondTap || lockScreen()) {
+    if (!isSecondTap || !isLockScreenSupported || lockScreen()) {
       return;
     }
     // Never granted, or revoked since. A gesture that silently does nothing is
     // worse than one that says what it needs, so the notice carries the fix.
     showNotice(
-      'Double tap to lock needs device admin. Tap to allow.',
+      'Double tap to lock needs JODE switched on in Accessibility. Tap to allow.',
       requestLockScreenPermission,
     );
   }, [showNotice]);

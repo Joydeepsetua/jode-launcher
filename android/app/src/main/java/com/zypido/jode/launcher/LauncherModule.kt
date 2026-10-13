@@ -1,7 +1,6 @@
 package com.zypido.jode.launcher
 
 import android.app.Activity
-import android.app.admin.DevicePolicyManager
 import android.app.role.RoleManager
 import android.content.ActivityNotFoundException
 import android.content.BroadcastReceiver
@@ -310,59 +309,57 @@ class LauncherModule(reactContext: ReactApplicationContext) : NativeLauncherSpec
 
   // region Screen lock
 
-  /** The component Android knows as this app's device administrator. */
-  private val adminComponent: ComponentName
-    get() = ComponentName(reactApplicationContext, LockAdminReceiver::class.java)
-
-  private val devicePolicyManager: DevicePolicyManager?
-    get() =
-        reactApplicationContext.getSystemService(Context.DEVICE_POLICY_SERVICE)
-            as? DevicePolicyManager
-
+  /**
+   * Locks through [LockAccessibilityService], the same lock as the power
+   * button, so fingerprint and face unlock keep working. Android 9+ only:
+   * below that the feature is not offered.
+   */
   override fun canLockScreen(): Boolean =
       try {
-        devicePolicyManager?.isAdminActive(adminComponent) == true
+        LockAccessibilityService.isSupported &&
+            LockAccessibilityService.isEnabled(reactApplicationContext)
       } catch (e: Exception) {
-        Log.w(TAG, "could not read device admin state", e)
+        Log.w(TAG, "could not read whether the screen can be locked", e)
         false
       }
 
+  /** False when the service was switched off or is not bound yet; JS then offers the way back. */
   override fun lockScreen(): Boolean =
       try {
-        val manager = devicePolicyManager
-        if (manager == null || !manager.isAdminActive(adminComponent)) {
-          // Revoked since we last looked. Reporting it lets JS offer the way
-          // back rather than leaving a gesture that quietly does nothing.
-          false
-        } else {
-          manager.lockNow()
-          true
-        }
-      } catch (e: SecurityException) {
-        Log.w(TAG, "not permitted to lock the screen", e)
-        false
+        LockAccessibilityService.lock()
       } catch (e: Exception) {
         Log.w(TAG, "could not lock the screen", e)
         false
       }
 
   override fun requestLockScreenPermission() {
+    if (!LockAccessibilityService.isSupported) return
     UiThreadUtil.runOnUiThread {
       val activity = reactApplicationContext.currentActivity ?: return@runOnUiThread
       try {
-        val intent =
-            Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
-                .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent)
-                .putExtra(
-                    DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                    reactApplicationContext.getString(R.string.lock_admin_explanation),
-                )
-        activity.startActivity(intent)
+        activity.startActivity(accessibilitySettingsIntent())
       } catch (e: Exception) {
-        Log.w(TAG, "could not open the device admin request", e)
+        Log.w(TAG, "could not open the accessibility service settings", e)
+        runCatching { activity.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
       }
     }
   }
+
+  /**
+   * Straight to our service's switch where the platform offers it (13+). The
+   * action is not in the public SDK, so it goes by name; where it is missing
+   * the caller falls back to the Accessibility list.
+   */
+  private fun accessibilitySettingsIntent(): Intent =
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        Intent(ACTION_ACCESSIBILITY_DETAILS_SETTINGS)
+            .putExtra(
+                Intent.EXTRA_COMPONENT_NAME,
+                LockAccessibilityService.component(reactApplicationContext).flattenToString(),
+            )
+      } else {
+        Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+      }
 
   // endregion
 
@@ -532,6 +529,8 @@ class LauncherModule(reactContext: ReactApplicationContext) : NativeLauncherSpec
 
     private const val TAG = "LauncherModule"
     private const val WORKER_THREADS = 3
+    private const val ACTION_ACCESSIBILITY_DETAILS_SETTINGS =
+        "android.settings.ACCESSIBILITY_DETAILS_SETTINGS"
     private const val REQUEST_CODE_HOME_ROLE = 4711
     private const val ERROR_UNEXPECTED = "E_LAUNCHER_UNEXPECTED"
     private const val ERROR_UNAVAILABLE = "E_LAUNCHER_UNAVAILABLE"

@@ -4,7 +4,7 @@
  * Everything above this file works with {@link AppInfo}; nothing else in the app
  * touches `NativeModules` or the codegen spec directly.
  */
-import type {EventSubscription} from 'react-native';
+import {Platform, type EventSubscription} from 'react-native';
 import NativeLauncher, {
   type NativeAppInfo,
   type NativeScreenTime,
@@ -497,8 +497,15 @@ export function setHomeAppIds(ids: readonly string[]): void {
 }
 
 /**
+ * Whether this Android version can lock at all: the accessibility lock action
+ * arrived in Android 9 (API 28). Below that the feature is not offered.
+ */
+export const isLockScreenSupported =
+  Platform.OS === 'android' && Number(Platform.Version) >= 28;
+
+/**
  * Whether double tap to lock is available — that is, whether the user has
- * granted the device-admin lock policy. Synchronous and cheap.
+ * switched on the lock accessibility service. Synchronous and cheap.
  */
 export function canLockScreen(): boolean {
   try {
@@ -524,13 +531,13 @@ export function lockScreen(): boolean {
   }
 }
 
-/** Opens the system device-admin screen where the lock policy is granted. */
+/** Opens the system screen where the lock is allowed (Accessibility settings). */
 export function requestLockScreenPermission(): void {
   try {
     NativeLauncher.requestLockScreenPermission();
   } catch (error) {
     if (__DEV__) {
-      console.warn('[launcher] could not open the device admin request', error);
+      console.warn('[launcher] could not open the lock permission screen', error);
     }
   }
 }
