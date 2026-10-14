@@ -161,6 +161,38 @@ internal class Preferences(context: Context) {
     write { putString(KEY_HOME_APP_IDS, ids) }
   }
 
+  /**
+   * Apps the user hid from the list and from search, newline-separated
+   * `package/activity` ids, the same shape as [homeAppIds].
+   */
+  fun hiddenAppIds(): String =
+      try {
+        preferences.getString(KEY_HIDDEN_APP_IDS, "") ?: ""
+      } catch (e: Exception) {
+        Log.w(TAG, "could not read the hidden apps", e)
+        ""
+      }
+
+  fun setHiddenAppIds(ids: String) {
+    write { putString(KEY_HIDDEN_APP_IDS, ids) }
+  }
+
+  /**
+   * Names the user gave apps in place of their own, as a JSON object from
+   * `package/activity` id to name. JS owns the format; this only stores it.
+   */
+  fun appNames(): String =
+      try {
+        preferences.getString(KEY_APP_NAMES, "") ?: ""
+      } catch (e: Exception) {
+        Log.w(TAG, "could not read the app names", e)
+        ""
+      }
+
+  fun setAppNames(names: String) {
+    write { putString(KEY_APP_NAMES, names) }
+  }
+
   private inline fun write(edit: android.content.SharedPreferences.Editor.() -> Unit) {
     try {
       preferences.edit().apply(edit).apply()
@@ -182,6 +214,8 @@ internal class Preferences(context: Context) {
     const val KEY_SHOW_APP_ICONS = "show_app_icons"
     const val KEY_HOME_APP_SOURCE = "home_app_source"
     const val KEY_HOME_APP_IDS = "home_app_ids"
+    const val KEY_HIDDEN_APP_IDS = "hidden_app_ids"
+    const val KEY_APP_NAMES = "app_names"
 
     /** Follow the device, and show the wallpaper with nothing over it. */
     const val DEFAULT_THEME_MODE = "system"

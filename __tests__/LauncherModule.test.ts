@@ -50,8 +50,10 @@ const mockNative = NativeLauncher as unknown as {
 const CHROME: AppInfo = {
   id: 'com.android.chrome/com.google.android.apps.chrome.Main',
   name: 'Chrome',
+  label: 'Chrome',
   packageName: 'com.android.chrome',
   activityName: 'com.google.android.apps.chrome.Main',
+  uninstallable: true,
 };
 
 beforeEach(() => {
@@ -65,6 +67,7 @@ describe('getInstalledApps', () => {
         packageName: 'com.android.chrome',
         activityName: 'com.google.android.apps.chrome.Main',
         name: 'Chrome',
+        uninstallable: true,
       },
     ]);
 

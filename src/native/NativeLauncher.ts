@@ -18,6 +18,8 @@ export type NativeAppInfo = {
   activityName: string;
   /** User-visible label resolved through PackageManager. */
   name: string;
+  /** False for apps in the system image, which cannot be uninstalled. */
+  uninstallable: boolean;
 };
 
 /** Today's usage against the busiest day on record, both in milliseconds. */
@@ -154,6 +156,22 @@ export interface Spec extends TurboModule {
   getHomeAppIds(): string;
 
   setHomeAppIds(ids: string): void;
+
+  /** Apps hidden from the list and search: newline-separated ids. */
+  getHiddenAppIds(): string;
+
+  setHiddenAppIds(ids: string): void;
+
+  /** Names the user gave apps, as a JSON object from id to name. */
+  getAppNames(): string;
+
+  setAppNames(names: string): void;
+
+  /** Opens the system's App info page. False when it could not be opened. */
+  openAppInfo(packageName: string): boolean;
+
+  /** Opens the system's uninstall dialog. False when it could not be opened. */
+  uninstallApp(packageName: string): boolean;
 
   /**
    * Whether the app can turn the display off: its accessibility service is

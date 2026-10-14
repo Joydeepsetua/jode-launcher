@@ -2,10 +2,14 @@
 export type AppInfo = {
   /** Stable identity: `packageName/activityName`. An app may expose several. */
   id: string;
-  /** User-visible label. */
+  /** User-visible label: the user's own name for it when they gave one. */
   name: string;
+  /** The label the app ships with, kept so a rename can be undone. */
+  label: string;
   packageName: string;
   activityName: string;
+  /** False for apps in the system image, which cannot be uninstalled. */
+  uninstallable: boolean;
 };
 
 /**

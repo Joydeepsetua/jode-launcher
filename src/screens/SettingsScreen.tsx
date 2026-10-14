@@ -14,7 +14,9 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {AppIcon} from '../components/AppIcon';
 import {Icon, type IconName} from '../components/Icon';
+import {useInstalledApps} from '../hooks/useInstalledApps';
 import {
   canLockScreen,
   isLockScreenSupported,
@@ -275,6 +277,8 @@ export function SettingsScreen() {
     homeAppSource,
     homeRowCount,
     homeAppIds,
+    hiddenAppIds,
+    setHiddenAppIds,
     setThemeMode,
     setScrimOpacity,
     setFontFamily,
@@ -285,6 +289,12 @@ export function SettingsScreen() {
     setShowAppIcons,
     setHomeAppSource,
   } = usePreferences();
+
+  const {hiddenApps} = useInstalledApps();
+  const unhide = useCallback(
+    (id: string) => setHiddenAppIds(hiddenAppIds.filter(hidden => hidden !== id)),
+    [hiddenAppIds, setHiddenAppIds],
+  );
 
   const [usageAccess, setUsageAccess] = useState(hasUsageAccess);
   const [isDefault, setIsDefault] = useState(isDefaultLauncher);
@@ -674,6 +684,62 @@ export function SettingsScreen() {
                 : homeAppSource === 'chosen'
                   ? 'Only the apps you tick appear, in the order you tick them. One that is uninstalled leaves the list on its own.'
                   : 'The list fills with the apps you have opened most recently — as many of them as fit the number above, and no more.'
+            }
+          />
+        </Section>
+
+        <Section theme={theme} title="Hidden apps">
+          {hiddenApps.length > 0 ? (
+            <Card theme={theme}>
+              {hiddenApps.map((app, position) => (
+                <Pressable
+                  key={app.id}
+                  onPress={() => unhide(app.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Unhide ${app.name}`}
+                  style={({pressed}) => [
+                    styles.row,
+                    position > 0 && [
+                      styles.divided,
+                      {borderTopColor: theme.colors.border},
+                    ],
+                    {opacity: pressed ? 0.5 : 1},
+                  ]}>
+                  {/* In the slot the other rows give their marks. */}
+                  <View style={styles.appIcon}>
+                    <AppIcon app={app} size={34} />
+                  </View>
+                  <View style={styles.rowText}>
+                    <Text
+                      style={[styles.rowTitle, {color: theme.colors.text}]}
+                      numberOfLines={1}>
+                      {app.name}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.chip,
+                      {backgroundColor: theme.colors.elevated},
+                    ]}>
+                    <Text
+                      style={[
+                        styles.chipText,
+                        {color: theme.colors.textSecondary},
+                      ]}>
+                      Unhide
+                    </Text>
+                  </View>
+                </Pressable>
+              ))}
+            </Card>
+          ) : null}
+          <Callout
+            theme={theme}
+            icon="eyeOff"
+            body={
+              hiddenApps.length > 0
+                ? 'Hidden apps stay installed but leave the list, search and the home screen. Tap one to bring it back.'
+                : 'Hold any app to rename it, hide it, add it to the home screen, see its info or uninstall it.'
             }
           />
         </Section>
@@ -1180,6 +1246,9 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 12,
+  },
+  appIcon: {
     marginRight: 12,
   },
   rowText: {

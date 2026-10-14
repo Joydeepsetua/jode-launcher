@@ -21,7 +21,12 @@ import {AppState} from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {AppListItem} from '../components/AppListItem';
+import {AppActionsMenu} from '../components/AppActionsMenu';
+import {
+  AppListItem,
+  LONG_PRESS_MS,
+  type MenuAnchor,
+} from '../components/AppListItem';
 import {Clock} from '../components/Clock';
 import {ScreenTimeRing} from '../components/ScreenTimeRing';
 import {SearchInput, type SearchInputHandle} from '../components/SearchInput';
@@ -31,12 +36,16 @@ import {useRecentApps} from '../hooks/useRecentApps';
 import {
   addHomePressedListener,
   isDefaultLauncher,
-  launchApp,
   isLockScreenSupported,
+  launchApp,
   lockScreen,
+  MAX_HOME_APPS,
+  openAppInfo,
   requestDefaultLauncher,
   requestLockScreenPermission,
   requestUsageAccess,
+  shareApp,
+  uninstallApp,
 } from '../native/LauncherModule';
 import type {RootStackParamList} from '../navigation/types';
 import {usePreferences} from '../preferences';
@@ -55,14 +64,6 @@ const SWIPE_UP_MIN_DY = 44;
 
 /** Movement under this, in dp, is a finger that meant to stay still. */
 const TAP_SLOP = 12;
-
-/**
- * How long a still finger on the wallpaper waits before settings open.
- *
- * The same hold Android has meant "this screen's own settings" since long
- * before this launcher, and the platform's own long-press duration.
- */
-const LONG_PRESS_MS = 500;
 
 /**
  * Empty space held above the drawer's first row, scrolled out of sight.
@@ -121,6 +122,11 @@ export function LauncherScreen() {
   const [drawerMounted, setDrawerMounted] = useState(false);
   // The height the drawer falls through, measured rather than assumed.
   const [contentHeight, setContentHeight] = useState(0);
+  // The app whose options are open after a hold, and where its row sits.
+  const [menu, setMenu] = useState<{app: AppInfo; anchor: MenuAnchor} | null>(
+    null,
+  );
+  const menuApp = menu?.app ?? null;
 
   // Read by the back handler and the launch guard, which must not re-subscribe
   // or be re-created on every keystroke.
@@ -164,6 +170,13 @@ export function LauncherScreen() {
     homeAppSource,
     homeRowCount,
     homeAppIds,
+    hiddenAppIds,
+    appNames,
+    setHomeAppIds,
+    setHomeAppSource,
+    setShowHomeApps,
+    setHiddenAppIds,
+    setAppNames,
   } = usePreferences();
   const showsRecents = showHomeApps && homeAppSource === 'recent';
   const {apps: recents, usageAccess} = useRecentApps(
@@ -694,15 +707,123 @@ export function LauncherScreen() {
     handleLaunch(results[0]);
   }, [query, results, handleLaunch]);
 
+  const handleLongPress = useCallback(
+    (result: SearchResult, anchor: MenuAnchor) => {
+      // The keyboard would sit over the menu, and the rename field brings its
+      // own when it is asked for.
+      Keyboard.dismiss();
+      setMenu({app: result.app, anchor});
+    },
+    [],
+  );
+
+  const closeMenu = useCallback(() => setMenu(null), []);
+
+  /**
+   * The picks that are on screen right now. The stored list can briefly hold
+   * an app that has just been uninstalled or hidden, and a slot nothing can
+   * show must not be what makes the list read as full.
+   */
+  const liveHomeIds = useMemo(() => {
+    const shown = new Set(apps.map(app => app.id));
+    return homeAppIds.filter(id => shown.has(id));
+  }, [apps, homeAppIds]);
+
+  /**
+   * Adding puts the app at the end of the chosen list, and turns that list on
+   * if the home screen was showing recents or nothing — an app added to the
+   * home screen that does not appear there would be an option that lied.
+   */
+  const toggleHome = useCallback(
+    (app: AppInfo) => {
+      if (liveHomeIds.includes(app.id)) {
+        setHomeAppIds(liveHomeIds.filter(id => id !== app.id));
+        return;
+      }
+      // Built on the live picks, so a stale id cannot push the new one past
+      // the limit the store trims to.
+      setHomeAppIds([...liveHomeIds, app.id]);
+      if (!showHomeApps) {
+        setShowHomeApps(true);
+      }
+      if (homeAppSource !== 'chosen') {
+        setHomeAppSource('chosen');
+        showNotice('Home screen now shows the apps you choose');
+      }
+    },
+    [
+      homeAppSource,
+      liveHomeIds,
+      setHomeAppIds,
+      setHomeAppSource,
+      setShowHomeApps,
+      showHomeApps,
+      showNotice,
+    ],
+  );
+
+  const renameApp = useCallback(
+    (app: AppInfo, name: string) => {
+      const next = {...appNames};
+      if (name.length === 0 || name === app.label) {
+        delete next[app.id];
+      } else {
+        next[app.id] = name;
+      }
+      setAppNames(next);
+    },
+    [appNames, setAppNames],
+  );
+
+  const hideApp = useCallback(
+    (app: AppInfo) => {
+      if (!hiddenAppIds.includes(app.id)) {
+        setHiddenAppIds([...hiddenAppIds, app.id]);
+      }
+      // A hidden app is off the home screen too, and gives its slot back.
+      if (homeAppIds.includes(app.id)) {
+        setHomeAppIds(homeAppIds.filter(id => id !== app.id));
+      }
+      showNotice(`${app.name} hidden. Unhide it in settings.`, openSettings);
+    },
+    [
+      hiddenAppIds,
+      homeAppIds,
+      openSettings,
+      setHiddenAppIds,
+      setHomeAppIds,
+      showNotice,
+    ],
+  );
+
+  const showAppInfo = useCallback(
+    (app: AppInfo) => {
+      if (!openAppInfo(app)) {
+        showNotice(`Could not open App info for ${app.name}`);
+      }
+    },
+    [showNotice],
+  );
+
+  const uninstall = useCallback(
+    (app: AppInfo) => {
+      if (!uninstallApp(app)) {
+        showNotice(`${app.name} cannot be uninstalled from here`);
+      }
+    },
+    [showNotice],
+  );
+
   const renderItem = useCallback(
     ({item}: ListRenderItemInfo<SearchResult>) => (
       <AppListItem
         result={item}
         onPress={handleLaunch}
+        onLongPress={handleLongPress}
         showIcon={showAppIcons}
       />
     ),
-    [handleLaunch, showAppIcons],
+    [handleLaunch, handleLongPress, showAppIcons],
   );
 
   const keyExtractor = useCallback((item: SearchResult) => item.app.id, []);
@@ -959,6 +1080,21 @@ export function LauncherScreen() {
           </Text>
         </View>
       ) : null}
+
+      <AppActionsMenu
+        key={menuApp?.id ?? 'closed'}
+        app={menuApp}
+        anchor={menu?.anchor ?? null}
+        onHome={menuApp !== null && liveHomeIds.includes(menuApp.id)}
+        homeFull={liveHomeIds.length >= MAX_HOME_APPS}
+        onClose={closeMenu}
+        onToggleHome={toggleHome}
+        onRename={renameApp}
+        onHide={hideApp}
+        onInfo={showAppInfo}
+        onShare={shareApp}
+        onUninstall={uninstall}
+      />
     </View>
   );
 }

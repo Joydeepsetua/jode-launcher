@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
@@ -100,6 +101,7 @@ class LauncherModule(reactContext: ReactApplicationContext) : NativeLauncherSpec
             putString("packageName", app.packageName)
             putString("activityName", app.activityName)
             putString("name", app.label)
+            putBoolean("uninstallable", app.uninstallable)
           }
       )
     }
@@ -303,6 +305,53 @@ class LauncherModule(reactContext: ReactApplicationContext) : NativeLauncherSpec
 
   override fun setHomeAppIds(ids: String) {
     preferences.setHomeAppIds(ids)
+  }
+
+  override fun getHiddenAppIds(): String = preferences.hiddenAppIds()
+
+  override fun setHiddenAppIds(ids: String) {
+    preferences.setHiddenAppIds(ids)
+  }
+
+  override fun getAppNames(): String = preferences.appNames()
+
+  override fun setAppNames(names: String) {
+    preferences.setAppNames(names)
+  }
+
+  // endregion
+
+  // region App actions
+
+  /** The system's own page for the app: storage, permissions, force stop. */
+  override fun openAppInfo(packageName: String): Boolean =
+      startFromCurrentActivity(
+          Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+              .setData(Uri.fromParts("package", packageName, null))
+      )
+
+  /**
+   * The system's uninstall confirmation. The launcher never removes anything
+   * itself; the list updates through the package receiver once it is gone.
+   */
+  override fun uninstallApp(packageName: String): Boolean =
+      startFromCurrentActivity(
+          Intent(Intent.ACTION_DELETE).setData(Uri.fromParts("package", packageName, null))
+      )
+
+  private fun startFromCurrentActivity(intent: Intent): Boolean {
+    val activity = reactApplicationContext.currentActivity
+    return try {
+      if (activity != null) {
+        activity.startActivity(intent)
+      } else {
+        reactApplicationContext.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+      }
+      true
+    } catch (e: Exception) {
+      Log.w(TAG, "could not start ${intent.action}", e)
+      false
+    }
   }
 
   // endregion

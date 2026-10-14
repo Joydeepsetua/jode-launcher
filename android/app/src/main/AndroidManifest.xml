@@ -8,11 +8,18 @@
       nothing and shows no prompt, and the user must switch it on by hand under
       Settings → Apps → Special app access → Usage access. Without it the
       launcher still works and falls back to its own launch history. Nothing read
-      here leaves the device. It remains the app's only permission of any kind.
+      here leaves the device.
     -->
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
+
+    <!--
+      Lets the long-press menu hand an app to the system's uninstall dialog.
+      Granted at install with no prompt, and it removes nothing by itself: the
+      user still confirms every uninstall in the system's own screen.
+    -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
 
     <!--
       Package visibility for Android 11+. This is the narrow, launcher-appropriate
