@@ -8,8 +8,10 @@ import type {AppInfo} from '../src/types/app';
 const app = (name: string, packageName: string): AppInfo => ({
   id: `${packageName}/${packageName}.Main`,
   name,
+  label: name,
   packageName,
   activityName: `${packageName}.Main`,
+  uninstallable: true,
 });
 
 /** 24 entries, alphabetical, as the native side delivers them. */

@@ -30,6 +30,11 @@ export type IconName =
   | 'check'
   | 'fileText'
   | 'share'
+  | 'info'
+  | 'trash'
+  | 'edit'
+  | 'eye'
+  | 'eyeOff'
   | 'star'
   | 'sun'
   | 'moon'
@@ -239,6 +244,46 @@ const SHAPES: Record<IconName, React.ReactNode> = {
   // already given, and this row is an invitation to give one.
   star: (
     <Path d="M12 3.7 14 9.3 19.9 9.4 15.2 13 16.9 18.7 12 15.4 7.1 18.7 8.8 13 4.1 9.4 10 9.3z" />
+  ),
+  // A lowercase i in a ring: the mark every "about this" button has used.
+  info: (
+    <>
+      <Circle cx={12} cy={12} r={8.5} />
+      <Path d="M12 11v5.2" />
+      <Path d="M12 7.8h.01" />
+    </>
+  ),
+  // A bin with its lid lifted off, which is what makes it read as throwing
+  // something away rather than as a box.
+  trash: (
+    <>
+      <Path d="M4.5 7h15" />
+      <Path d="M9.5 7V5.2a1.2 1.2 0 0 1 1.2-1.2h2.6a1.2 1.2 0 0 1 1.2 1.2V7" />
+      <Path d="M6.5 7l.8 11.6a1.8 1.8 0 0 0 1.8 1.7h5.8a1.8 1.8 0 0 0 1.8-1.7L17.5 7" />
+    </>
+  ),
+  // A pencil on the slant, point down-left: writing a new name.
+  edit: (
+    <>
+      <Path d="M15.6 4.9a2 2 0 0 1 2.8 0l.7.7a2 2 0 0 1 0 2.8L9 18.5l-4.4 1 1-4.4z" />
+      <Path d="m14 6.5 3.5 3.5" />
+    </>
+  ),
+  // An open eye: something that can be seen again.
+  eye: (
+    <>
+      <Path d="M2.8 12s3.4-6.5 9.2-6.5 9.2 6.5 9.2 6.5-3.4 6.5-9.2 6.5S2.8 12 2.8 12z" />
+      <Circle cx={12} cy={12} r={2.8} />
+    </>
+  ),
+  // The same eye struck through: kept out of sight.
+  eyeOff: (
+    <>
+      <Path d="M9.9 5.8A9.6 9.6 0 0 1 12 5.5c5.8 0 9.2 6.5 9.2 6.5a16 16 0 0 1-2.3 3.1" />
+      <Path d="M6.5 7.3C4.1 8.9 2.8 12 2.8 12s3.4 6.5 9.2 6.5a9 9 0 0 0 4.9-1.4" />
+      <Path d="M10 10a2.8 2.8 0 0 0 4 4" />
+      <Path d="m4 4 16 16" />
+    </>
   ),
   chevronLeft: <Path d="m14.5 5.5-7 6.5 7 6.5" />,
   chevronRight: <Path d="m9.5 5.5 7 6.5-7 6.5" />,

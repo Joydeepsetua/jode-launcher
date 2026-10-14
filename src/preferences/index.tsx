@@ -18,6 +18,8 @@ import {
   DEFAULT_HOME_ROW_COUNT,
   getFontFamily,
   getFontScale,
+  getAppNames,
+  getHiddenAppIds,
   getHomeAppIds,
   getHomeAppSource,
   getHomeRowCount,
@@ -26,7 +28,9 @@ import {
   getShowClock,
   getShowHomeApps,
   getThemeMode,
+  setAppNames as persistAppNames,
   setFontFamily as persistFontFamily,
+  setHiddenAppIds as persistHiddenAppIds,
   setFontScale as persistFontScale,
   setHomeAppIds as persistHomeAppIds,
   setHomeAppSource as persistHomeAppSource,
@@ -64,6 +68,10 @@ export type Preferences = {
   homeRowCount: number;
   /** The apps picked by hand, in the order they were picked. */
   homeAppIds: string[];
+  /** Apps hidden from the list and search. */
+  hiddenAppIds: string[];
+  /** Names the user gave apps in place of their own, by id. */
+  appNames: Record<string, string>;
   setThemeMode: (mode: ThemeMode) => void;
   setScrimOpacity: (value: number) => void;
   setFontFamily: (family: FontFamily) => void;
@@ -74,6 +82,8 @@ export type Preferences = {
   setShowAppIcons: (value: boolean) => void;
   setHomeAppSource: (source: HomeAppSource) => void;
   setHomeAppIds: (ids: string[]) => void;
+  setHiddenAppIds: (ids: string[]) => void;
+  setAppNames: (names: Record<string, string>) => void;
 };
 
 /** What the launcher looks like before anyone has been to settings. */
@@ -88,6 +98,8 @@ const DEFAULTS: Preferences = {
   homeAppSource: 'recent',
   homeRowCount: DEFAULT_HOME_ROW_COUNT,
   homeAppIds: [],
+  hiddenAppIds: [],
+  appNames: {},
   setThemeMode: () => {},
   setScrimOpacity: () => {},
   setFontFamily: () => {},
@@ -98,6 +110,8 @@ const DEFAULTS: Preferences = {
   setShowAppIcons: () => {},
   setHomeAppSource: () => {},
   setHomeAppIds: () => {},
+  setHiddenAppIds: () => {},
+  setAppNames: () => {},
 };
 
 const PreferencesContext = createContext<Preferences | null>(null);
@@ -118,6 +132,10 @@ export function PreferencesProvider({children}: {children: ReactNode}) {
   const [homeAppSource, setHomeAppSourceState] =
     useState<HomeAppSource>(getHomeAppSource);
   const [homeAppIds, setHomeAppIdsState] = useState<string[]>(getHomeAppIds);
+  const [hiddenAppIds, setHiddenAppIdsState] =
+    useState<string[]>(getHiddenAppIds);
+  const [appNames, setAppNamesState] =
+    useState<Record<string, string>>(getAppNames);
 
   // State first, store second: the screen the user is looking at responds to
   // the tap, and the write that outlives the process follows behind it.
@@ -171,6 +189,16 @@ export function PreferencesProvider({children}: {children: ReactNode}) {
     persistHomeAppIds(ids);
   }, []);
 
+  const setHiddenAppIds = useCallback((ids: string[]) => {
+    setHiddenAppIdsState(ids);
+    persistHiddenAppIds(ids);
+  }, []);
+
+  const setAppNames = useCallback((names: Record<string, string>) => {
+    setAppNamesState(names);
+    persistAppNames(names);
+  }, []);
+
   const value = useMemo<Preferences>(
     () => ({
       themeMode,
@@ -183,6 +211,8 @@ export function PreferencesProvider({children}: {children: ReactNode}) {
       homeAppSource,
       homeRowCount,
       homeAppIds,
+      hiddenAppIds,
+      appNames,
       setThemeMode,
       setScrimOpacity,
       setFontFamily,
@@ -193,6 +223,8 @@ export function PreferencesProvider({children}: {children: ReactNode}) {
       setShowAppIcons,
       setHomeAppSource,
       setHomeAppIds,
+      setHiddenAppIds,
+      setAppNames,
     }),
     [
       themeMode,
@@ -205,6 +237,8 @@ export function PreferencesProvider({children}: {children: ReactNode}) {
       homeAppSource,
       homeRowCount,
       homeAppIds,
+      hiddenAppIds,
+      appNames,
       setThemeMode,
       setScrimOpacity,
       setFontFamily,
@@ -215,6 +249,8 @@ export function PreferencesProvider({children}: {children: ReactNode}) {
       setShowAppIcons,
       setHomeAppSource,
       setHomeAppIds,
+      setHiddenAppIds,
+      setAppNames,
     ],
   );
 

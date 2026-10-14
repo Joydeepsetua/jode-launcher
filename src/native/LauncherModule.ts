@@ -4,7 +4,7 @@
  * Everything above this file works with {@link AppInfo}; nothing else in the app
  * touches `NativeModules` or the codegen spec directly.
  */
-import {Platform, type EventSubscription} from 'react-native';
+import {Platform, Share, type EventSubscription} from 'react-native';
 import NativeLauncher, {
   type NativeAppInfo,
   type NativeScreenTime,
@@ -18,8 +18,10 @@ const identify = (packageName: string, activityName: string): string =>
 const toAppInfo = (raw: NativeAppInfo): AppInfo => ({
   id: identify(raw.packageName, raw.activityName),
   name: raw.name,
+  label: raw.name,
   packageName: raw.packageName,
   activityName: raw.activityName,
+  uninstallable: raw.uninstallable,
 });
 
 /**
@@ -494,6 +496,91 @@ export function setHomeAppIds(ids: readonly string[]): void {
       console.warn('[launcher] could not persist the chosen home apps', error);
     }
   }
+}
+
+/** Apps hidden from the list and search, by id. */
+export function getHiddenAppIds(): string[] {
+  try {
+    return NativeLauncher.getHiddenAppIds()
+      .split(ID_SEPARATOR)
+      .filter(id => id.length > 0);
+  } catch {
+    return [];
+  }
+}
+
+/** Remembers which apps are hidden. */
+export function setHiddenAppIds(ids: readonly string[]): void {
+  try {
+    NativeLauncher.setHiddenAppIds(ids.join(ID_SEPARATOR));
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[launcher] could not persist the hidden apps', error);
+    }
+  }
+}
+
+/** The names the user gave apps, by id. Empty when none, or unreadable. */
+export function getAppNames(): Record<string, string> {
+  try {
+    const stored = NativeLauncher.getAppNames();
+    if (stored.length === 0) {
+      return {};
+    }
+    const parsed: unknown = JSON.parse(stored);
+    if (typeof parsed !== 'object' || parsed === null) {
+      return {};
+    }
+    const names: Record<string, string> = {};
+    for (const [id, name] of Object.entries(parsed)) {
+      if (typeof name === 'string' && name.length > 0) {
+        names[id] = name;
+      }
+    }
+    return names;
+  } catch {
+    return {};
+  }
+}
+
+/** Remembers the names the user gave apps. */
+export function setAppNames(names: Readonly<Record<string, string>>): void {
+  try {
+    NativeLauncher.setAppNames(JSON.stringify(names));
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[launcher] could not persist the app names', error);
+    }
+  }
+}
+
+/** Opens the system's App info page for the app. */
+export function openAppInfo(app: AppInfo): boolean {
+  try {
+    return NativeLauncher.openAppInfo(app.packageName);
+  } catch {
+    return false;
+  }
+}
+
+/** Opens the system's uninstall dialog for the app; the user confirms there. */
+export function uninstallApp(app: AppInfo): boolean {
+  try {
+    return NativeLauncher.uninstallApp(app.packageName);
+  } catch {
+    return false;
+  }
+}
+
+/** Shares the app's Play Store link through the system share sheet. */
+export function shareApp(app: AppInfo): void {
+  Share.share({
+    message: `${app.label}\nhttps://play.google.com/store/apps/details?id=${app.packageName}`,
+  }).catch(error => {
+    if (__DEV__) {
+      console.warn('[launcher] could not share the app', error);
+    }
+  });
 }
 
 /**

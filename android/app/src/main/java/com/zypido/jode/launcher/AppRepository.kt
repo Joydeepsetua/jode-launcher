@@ -2,6 +2,7 @@ package com.zypido.jode.launcher
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.os.Build
@@ -14,6 +15,8 @@ internal data class LaunchableApp(
     val packageName: String,
     val activityName: String,
     val label: String,
+    /** False for apps baked into the system image, which cannot be uninstalled. */
+    val uninstallable: Boolean,
 )
 
 /**
@@ -75,7 +78,9 @@ internal class AppRepository(private val context: Context) {
       if (!seen.add("$packageName/$activityName")) continue
 
       val label = resolveLabel(packageManager, info, packageName)
-      apps.add(LaunchableApp(packageName, activityName, label))
+      val flags = activityInfo.applicationInfo?.flags ?: 0
+      val uninstallable = flags and ApplicationInfo.FLAG_SYSTEM == 0
+      apps.add(LaunchableApp(packageName, activityName, label, uninstallable))
     }
 
     val collator =

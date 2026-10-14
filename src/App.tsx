@@ -3,6 +3,7 @@ import {StatusBar} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {RootNavigator} from './navigation/RootNavigator';
 import {WelcomeScreen} from './screens/WelcomeScreen';
+import {InstalledAppsProvider} from './hooks/useInstalledApps';
 import {useSetup} from './hooks/useSetup';
 import {PreferencesProvider} from './preferences';
 import {useTheme} from './theme';
@@ -30,9 +31,11 @@ function Root() {
 export default function App() {
   return (
     <PreferencesProvider>
-      <SafeAreaProvider>
-        <Root />
-      </SafeAreaProvider>
+      <InstalledAppsProvider>
+        <SafeAreaProvider>
+          <Root />
+        </SafeAreaProvider>
+      </InstalledAppsProvider>
     </PreferencesProvider>
   );
 }
