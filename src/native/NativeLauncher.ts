@@ -73,6 +73,9 @@ export interface Spec extends TurboModule {
   /** Opens the system usage-access list. There is no runtime prompt for it. */
   requestUsageAccess(): void;
 
+  /** Opens the system's screen-time dashboard (Digital Wellbeing or the vendor's equivalent). */
+  openScreenTime(): void;
+
   /**
    * Whether the user has been through first run. Records only that they were
    * asked, not what they answered — both steps are skippable.

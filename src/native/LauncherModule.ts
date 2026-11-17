@@ -152,6 +152,20 @@ export function requestUsageAccess(): void {
 }
 
 /**
+ * Opens the system's screen-time dashboard — Digital Wellbeing, or the vendor's
+ * equivalent — falling back to the usage-access list when there is none.
+ */
+export function openScreenTime(): void {
+  try {
+    NativeLauncher.openScreenTime();
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[launcher] could not open screen time', error);
+    }
+  }
+}
+
+/**
  * Whether first run is done. Assumes it is when the check fails, because the
  * failure that repeats a welcome screen on every Home press is the worse one.
  */

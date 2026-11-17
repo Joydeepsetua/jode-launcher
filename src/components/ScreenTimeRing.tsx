@@ -1,5 +1,6 @@
 import React, {memo} from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {openScreenTime} from '../native/LauncherModule';
 import {useScreenTime} from '../hooks/useScreenTime';
 import {useTheme} from '../theme';
 
@@ -57,10 +58,13 @@ function ScreenTimeRingComponent() {
   const cap = {backgroundColor: theme.colors.text};
 
   return (
-    <View
-      style={styles.dial}
-      accessibilityRole="text"
-      accessibilityLabel={`${label} of screen time today`}>
+    <Pressable
+      style={({pressed}) => [styles.dial, pressed && styles.pressed]}
+      onPress={openScreenTime}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={`${label} of screen time today`}
+      accessibilityHint="Opens screen time in system settings">
       <View
         style={[
           styles.ring,
@@ -133,7 +137,7 @@ function ScreenTimeRingComponent() {
           TODAY
         </Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -141,6 +145,9 @@ const styles = StyleSheet.create({
   dial: {
     width: SIZE,
     height: SIZE,
+  },
+  pressed: {
+    opacity: 0.6,
   },
   ring: {
     position: 'absolute',

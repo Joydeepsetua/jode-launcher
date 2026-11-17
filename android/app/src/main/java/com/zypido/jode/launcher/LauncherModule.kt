@@ -234,6 +234,45 @@ class LauncherModule(reactContext: ReactApplicationContext) : NativeLauncherSpec
     }
   }
 
+  override fun openScreenTime() {
+    UiThreadUtil.runOnUiThread {
+      val activity = reactApplicationContext.currentActivity ?: return@runOnUiThread
+      val packageManager = activity.packageManager
+      // The system's own screen-time dashboard lives in whichever wellbeing
+      // app the vendor ships, so try each in turn and settle for the first
+      // that opens: Google's Digital Wellbeing, then Samsung's, and failing
+      // both the usage-access list, which at least is about the same thing.
+      val candidates =
+          listOfNotNull(
+              Intent(Intent.ACTION_MAIN)
+                  .setComponent(
+                      ComponentName(
+                          "com.google.android.apps.wellbeing",
+                          "com.google.android.apps.wellbeing.settings.TopLevelSettingsActivity",
+                      )
+                  ),
+              runCatching {
+                    packageManager.getLaunchIntentForPackage("com.google.android.apps.wellbeing")
+                  }
+                  .getOrNull(),
+              runCatching {
+                    packageManager.getLaunchIntentForPackage("com.samsung.android.forest")
+                  }
+                  .getOrNull(),
+              Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS),
+              Intent(Settings.ACTION_SETTINGS),
+          )
+      for (intent in candidates) {
+        try {
+          activity.startActivity(intent)
+          return@runOnUiThread
+        } catch (e: Exception) {
+          Log.w(TAG, "screen time via ${intent.component ?: intent.action} unavailable", e)
+        }
+      }
+    }
+  }
+
   // endregion
 
   // region First run
