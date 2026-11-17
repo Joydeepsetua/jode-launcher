@@ -13,6 +13,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
+import android.view.HapticFeedbackConstants
 import androidx.annotation.RequiresApi
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
@@ -380,6 +381,14 @@ class LauncherModule(reactContext: ReactApplicationContext) : NativeLauncherSpec
         Log.w(TAG, "could not lock the screen", e)
         false
       }
+
+  /** Played on the window's root view, so it goes through the system's touch-feedback setting. */
+  override fun performLongPressHaptic() {
+    UiThreadUtil.runOnUiThread {
+      val view = reactApplicationContext.currentActivity?.window?.decorView ?: return@runOnUiThread
+      view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+    }
+  }
 
   override fun requestLockScreenPermission() {
     if (!LockAccessibilityService.isSupported) return

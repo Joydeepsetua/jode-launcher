@@ -41,13 +41,14 @@ import {
   lockScreen,
   MAX_HOME_APPS,
   openAppInfo,
+  performLongPressHaptic,
   requestDefaultLauncher,
-  requestLockScreenPermission,
   requestUsageAccess,
   shareApp,
   uninstallApp,
 } from '../native/LauncherModule';
 import type {RootStackParamList} from '../navigation/types';
+import {askToEnableLock} from '../utils/lockDisclosure';
 import {usePreferences} from '../preferences';
 import {useTheme} from '../theme';
 import type {AppInfo, SearchResult} from '../types/app';
@@ -486,7 +487,7 @@ export function LauncherScreen() {
     // worse than one that says what it needs, so the notice carries the fix.
     showNotice(
       'Double tap to lock needs JODE switched on in Accessibility. Tap to allow.',
-      requestLockScreenPermission,
+      askToEnableLock,
     );
   }, [showNotice]);
 
@@ -518,6 +519,7 @@ export function LauncherScreen() {
           longPressTimer.current = setTimeout(() => {
             longPressTimer.current = null;
             longPressFired.current = true;
+            performLongPressHaptic();
             openSettings();
           }, LONG_PRESS_MS);
         },
@@ -628,6 +630,15 @@ export function LauncherScreen() {
     });
     return () => subscription.remove();
   }, [closeInstantly, navigation]);
+
+  // Settings is rendered ahead of time, out of sight, whenever the home screen
+  // is showing. The slide only starts once the screen above has drawn, and
+  // settings is a long screen to draw: preloaded, the hold opens it at once.
+  useFocusEffect(
+    useCallback(() => {
+      navigation.preload('Settings');
+    }, [navigation]),
+  );
 
   // A home app has nothing to go back to: Back closes the search, and is
   // otherwise swallowed so the launcher stays on screen.

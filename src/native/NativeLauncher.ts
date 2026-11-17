@@ -96,8 +96,8 @@ export interface Spec extends TurboModule {
   setScrimOpacity(value: number): void;
 
   /**
-   * The face the launcher draws its own text in: `system`, `serif`, `mono` or
-   * `condensed`. Synchronous for the same reason the theme is — the first frame
+   * The face the launcher draws its own text in: `system`, `serif`, `mono`,
+   * `condensed` or `casual`. Synchronous for the same reason the theme is — the first frame
    * has to be the one the user chose.
    */
   getFontFamily(): string;
@@ -184,6 +184,12 @@ export interface Spec extends TurboModule {
 
   /** Opens Accessibility settings, where the lock service is switched on. */
   requestLockScreenPermission(): void;
+
+  /**
+   * The system's own long-press tick, the one a held photo gives. Follows the
+   * user's touch-feedback setting, and needs no vibrate permission.
+   */
+  performLongPressHaptic(): void;
 
   /** Whether this app is currently the system default Home app. */
   isDefaultLauncher(): boolean;

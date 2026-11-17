@@ -229,13 +229,14 @@ export function setScrimOpacity(value: number): void {
 }
 
 /** The faces the settings screen offers, and the stored value's domain. */
-export type FontFamily = 'system' | 'serif' | 'mono' | 'condensed';
+export type FontFamily = 'system' | 'serif' | 'mono' | 'condensed' | 'casual';
 
 const FONT_FAMILIES: readonly FontFamily[] = [
   'system',
   'serif',
   'mono',
   'condensed',
+  'casual',
 ];
 
 /**
@@ -625,6 +626,21 @@ export function requestLockScreenPermission(): void {
   } catch (error) {
     if (__DEV__) {
       console.warn('[launcher] could not open the lock permission screen', error);
+    }
+  }
+}
+
+/**
+ * The tick that tells a finger its hold has registered — the same one the
+ * system gives when a photo is held. Shared by every long press, so the
+ * wallpaper hold and the row hold always feel alike.
+ */
+export function performLongPressHaptic(): void {
+  try {
+    NativeLauncher.performLongPressHaptic();
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[launcher] could not play the long-press haptic', error);
     }
   }
 }
