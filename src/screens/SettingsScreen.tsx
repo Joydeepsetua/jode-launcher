@@ -11,7 +11,7 @@ import {
   View,
   type AppStateStatus,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {AppIcon} from '../components/AppIcon';
@@ -23,17 +23,23 @@ import {
   hasUsageAccess,
   isDefaultLauncher,
   requestDefaultLauncher,
-  requestLockScreenPermission,
   requestUsageAccess,
 } from '../native/LauncherModule';
 import type {RootStackParamList} from '../navigation/types';
+import {askToEnableLock} from '../utils/lockDisclosure';
 import {
   usePreferences,
   type FontFamily,
   type HomeAppSource,
   type ThemeMode,
 } from '../preferences';
-import {FONT_SCALES, SCRIM_STEPS, useTheme, type Theme} from '../theme';
+import {
+  FONT_FACES,
+  FONT_SCALES,
+  SCRIM_STEPS,
+  useTheme,
+  type Theme,
+} from '../theme';
 
 /** A permission the launcher can use but never requires. */
 type Permission = {
@@ -52,6 +58,8 @@ type Choice<T> = {
   label: string;
   /** Left off where the options have no picture to give them, as the wash has. */
   icon?: IconName;
+  /** The face the label is drawn in, where the option *is* a face. */
+  fontFamily?: string;
 };
 
 const THEME_CHOICES: readonly Choice<ThemeMode>[] = [
@@ -60,11 +68,13 @@ const THEME_CHOICES: readonly Choice<ThemeMode>[] = [
   {value: 'light', label: 'Light', icon: 'sun'},
 ];
 
+/** Each face is named in itself, so the choice can be made by looking. */
 const TYPEFACE_CHOICES: readonly Choice<FontFamily>[] = [
-  {value: 'system', label: 'System'},
-  {value: 'serif', label: 'Serif'},
-  {value: 'mono', label: 'Mono'},
-  {value: 'condensed', label: 'Narrow'},
+  {value: 'system', label: 'System', fontFamily: FONT_FACES.system},
+  {value: 'serif', label: 'Serif', fontFamily: FONT_FACES.serif},
+  {value: 'mono', label: 'Mono', fontFamily: FONT_FACES.mono},
+  {value: 'condensed', label: 'Narrow', fontFamily: FONT_FACES.condensed},
+  {value: 'casual', label: 'Casual', fontFamily: FONT_FACES.casual},
 ];
 
 /** One label per step in {@link FONT_SCALES}, in the same order. */
@@ -326,17 +336,25 @@ export function SettingsScreen() {
    * The launcher swallows Back outright — a home app has nothing behind it —
    * and its handler is still registered underneath us, so this one has to be
    * here to be reached first and pop the stack.
+   *
+   * Bound to focus rather than to mount, because the launcher preloads this
+   * screen out of sight, and a hidden settings screen must not take Back from
+   * the home screen. Focus is also when the permission answers are re-read:
+   * a preloaded screen read them before the user arrived.
    */
-  useEffect(() => {
-    const subscription = BackHandler.addEventListener(
-      'hardwareBackPress',
-      () => {
-        navigation.goBack();
-        return true;
-      },
-    );
-    return () => subscription.remove();
-  }, [navigation]);
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        () => {
+          navigation.goBack();
+          return true;
+        },
+      );
+      return () => subscription.remove();
+    }, [navigation, refresh]),
+  );
 
   const permissions = useMemo<Permission[]>(
     () => [
@@ -366,7 +384,7 @@ export function SettingsScreen() {
               body: 'Turns the display off when you tap the wallpaper twice. Switch JODE on in Accessibility.',
               granted: canLock,
               icon: 'lock',
-              request: requestLockScreenPermission,
+              request: askToEnableLock,
             } satisfies Permission,
           ]
         : []),
@@ -1005,7 +1023,7 @@ function Segmented<T>({
               style={[
                 styles.segmentText,
                 choice.icon === undefined && styles.segmentTextAlone,
-                {color: ink},
+                {color: ink, fontFamily: choice.fontFamily},
               ]}>
               {choice.label}
             </Text>

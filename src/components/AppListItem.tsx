@@ -1,6 +1,7 @@
 import React, {memo, useCallback, useRef} from 'react';
 import {Pressable, StyleSheet, Text, type HostInstance} from 'react-native';
 import {AppIcon} from './AppIcon';
+import {performLongPressHaptic} from '../native/LauncherModule';
 import {typeStyle, useTheme} from '../theme';
 import type {SearchResult} from '../types/app';
 
@@ -55,6 +56,8 @@ function AppListItemComponent({
   const rowRef = useRef<HostInstance>(null);
 
   const handleLongPress = useCallback(() => {
+    // Felt the moment the hold counts, not after the measure comes back.
+    performLongPressHaptic();
     // The row's own edges are what the menu lines up with, so it never covers
     // the name it belongs to. Measured rather than read off the touch, whose
     // offsets are relative to whichever child the finger landed on.

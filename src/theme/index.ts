@@ -125,11 +125,12 @@ export const SCRIM_STEPS = [0, 0.25, 0.45, 0.65] as const;
  * naming it would pin the launcher to one face on a device whose owner has
  * chosen another, which is the opposite of what "System" promises.
  */
-const FONT_FACES: Record<FontFamily, string | undefined> = {
+export const FONT_FACES: Record<FontFamily, string | undefined> = {
   system: undefined,
   serif: 'serif',
   mono: 'monospace',
   condensed: 'sans-serif-condensed',
+  casual: 'casual',
 };
 
 /**
