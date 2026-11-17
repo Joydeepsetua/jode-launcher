@@ -43,14 +43,15 @@ import {
   openAppInfo,
   performLongPressHaptic,
   requestDefaultLauncher,
-  requestUsageAccess,
+  isDrawerHintSeen,
+  markDrawerHintSeen,
   shareApp,
   uninstallApp,
 } from '../native/LauncherModule';
 import type {RootStackParamList} from '../navigation/types';
 import {askToEnableLock} from '../utils/lockDisclosure';
 import {usePreferences} from '../preferences';
-import {useTheme} from '../theme';
+import {typeStyle, useTheme} from '../theme';
 import type {AppInfo, SearchResult} from '../types/app';
 import {searchApps} from '../utils/appSearch';
 
@@ -118,6 +119,10 @@ export function LauncherScreen() {
   // clock and the apps you last used; the keyboard is an interruption, and it
   // should arrive only when the user reaches for it.
   const [searchOpen, setSearchOpen] = useState(false);
+  // The swipe-up hint is for finding the drawer; once it has been found the
+  // line has nothing left to say, so it retires for good.
+  const [drawerHintSeen, setDrawerHintSeen] = useState(isDrawerHintSeen);
+  const drawerHintSeenRef = useRef(drawerHintSeen);
   // Rendered separately from `searchOpen`, because a drawer on its way out is
   // still a drawer on screen. Unmounts when the closing animation lands.
   const [drawerMounted, setDrawerMounted] = useState(false);
@@ -180,7 +185,7 @@ export function LauncherScreen() {
     setAppNames,
   } = usePreferences();
   const showsRecents = showHomeApps && homeAppSource === 'recent';
-  const {apps: recents, usageAccess} = useRecentApps(
+  const {apps: recents} = useRecentApps(
     apps,
     showsRecents ? homeRowCount : 0,
   );
@@ -331,6 +336,11 @@ export function LauncherScreen() {
       return;
     }
     setSearchOpen(true);
+    if (!drawerHintSeenRef.current) {
+      drawerHintSeenRef.current = true;
+      setDrawerHintSeen(true);
+      markDrawerHintSeen();
+    }
     // `autoFocus` covers the mount; this covers the frame Android drops it in.
     focusSearch();
   }, [focusSearch]);
@@ -892,11 +902,9 @@ export function LauncherScreen() {
     return `No apps match “${query.trim()}”`;
   }, [listProblem, query]);
 
-  // What the launcher still needs from the user, most costly to leave unfixed
-  // first. Both can be outstanding at once and each is a separate trip into
-  // Settings, so both are shown: ranking them would hide the second behind the
-  // first, and the second is the only route to a permission with no prompt of
-  // its own. A transient notice replaces them for its few seconds.
+  // What the launcher still needs from the user. Usage access is asked for in
+  // first run and in Settings, not here: it is optional, and the home screen
+  // works without it. A transient notice replaces these for its few seconds.
   const prompts = useMemo<{text: string; action: () => void}[]>(() => {
     if (notice !== null) {
       return [];
@@ -908,14 +916,8 @@ export function LauncherScreen() {
         action: requestDefaultLauncher,
       });
     }
-    if (!usageAccess) {
-      pending.push({
-        text: 'Allow usage access for screen time and recents',
-        action: requestUsageAccess,
-      });
-    }
     return pending;
-  }, [notice, isDefault, usageAccess]);
+  }, [notice, isDefault]);
 
   /** The one line a list shows in place of rows it does not have. */
   const renderEmpty = (message: string | null) =>
@@ -1064,14 +1066,18 @@ export function LauncherScreen() {
           onPress={prompt.action}
           accessibilityRole="button"
           style={({pressed}) => [
-            styles.footer,
+            styles.prompt,
             {
               paddingHorizontal: theme.spacing.gutter,
               opacity: pressed ? 0.5 : 1,
             },
           ]}>
           <Text
-            style={[styles.footerText, {color: theme.colors.textMuted}]}
+            style={[
+              styles.promptText,
+              typeStyle(theme, 18),
+              {color: theme.colors.text},
+            ]}
             numberOfLines={1}>
             {prompt.text}
           </Text>
@@ -1080,7 +1086,7 @@ export function LauncherScreen() {
 
       {/* A control nobody can see is a control nobody finds. One muted line,
           gone the moment the field it describes is on screen. */}
-      {!searchOpen && notice === null ? (
+      {!drawerHintSeen && !searchOpen && notice === null ? (
         <View
           style={[styles.footer, {paddingHorizontal: theme.spacing.gutter}]}
           pointerEvents="none">
@@ -1157,6 +1163,17 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 13,
+    letterSpacing: 0.3,
+  },
+  // Something the launcher needs before it can do its job, so it is the one
+  // footer line set apart: centred, and in the size of a row rather than a note.
+  prompt: {
+    alignItems: 'center',
+    paddingTop: 12,
+    paddingBottom: 12,
+  },
+  promptText: {
+    textAlign: 'center',
     letterSpacing: 0.3,
   },
 });

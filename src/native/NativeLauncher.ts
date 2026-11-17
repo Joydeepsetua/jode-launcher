@@ -138,6 +138,12 @@ export interface Spec extends TurboModule {
 
   setShowClock(value: boolean): void;
 
+  /** Whether the user has opened the app drawer at least once. */
+  isDrawerHintSeen(): boolean;
+
+  /** Remembers that the drawer has been opened, so its hint can retire. */
+  markDrawerHintSeen(): void;
+
   /** Whether app rows carry the app's own icon beside its name. */
   getShowAppIcons(): boolean;
 

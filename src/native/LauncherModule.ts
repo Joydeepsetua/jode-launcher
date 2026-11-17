@@ -404,6 +404,29 @@ export function getShowClock(): boolean {
   }
 }
 
+/**
+ * Whether the drawer has been opened before. Assumes not when the store cannot
+ * be read: an extra hint costs a line, a missing one costs the whole drawer.
+ */
+export function isDrawerHintSeen(): boolean {
+  try {
+    return NativeLauncher.isDrawerHintSeen();
+  } catch {
+    return false;
+  }
+}
+
+/** Retires the "Swipe up for all apps" hint for good. Idempotent. */
+export function markDrawerHintSeen(): void {
+  try {
+    NativeLauncher.markDrawerHintSeen();
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[launcher] could not persist the drawer hint', error);
+    }
+  }
+}
+
 /** Remembers whether the home screen carries the clock. */
 export function setShowClock(value: boolean): void {
   try {

@@ -114,6 +114,22 @@ internal class Preferences(context: Context) {
     write { putBoolean(KEY_SHOW_CLOCK, value) }
   }
 
+  /**
+   * Whether the user has opened the app drawer at least once, after which the
+   * home screen stops telling them how to.
+   */
+  fun drawerHintSeen(): Boolean =
+      try {
+        preferences.getBoolean(KEY_DRAWER_HINT_SEEN, false)
+      } catch (e: Exception) {
+        Log.w(TAG, "could not read whether the drawer hint was seen", e)
+        false
+      }
+
+  fun setDrawerHintSeen() {
+    write { putBoolean(KEY_DRAWER_HINT_SEEN, true) }
+  }
+
   /** Whether app rows carry the app's own icon beside the name. */
   fun showAppIcons(): Boolean =
       try {
@@ -211,6 +227,7 @@ internal class Preferences(context: Context) {
     const val KEY_HOME_ROW_COUNT = "home_row_count"
     const val KEY_SHOW_HOME_APPS = "show_home_apps"
     const val KEY_SHOW_CLOCK = "show_clock"
+    const val KEY_DRAWER_HINT_SEEN = "drawer_hint_seen"
     const val KEY_SHOW_APP_ICONS = "show_app_icons"
     const val KEY_HOME_APP_SOURCE = "home_app_source"
     const val KEY_HOME_APP_IDS = "home_app_ids"

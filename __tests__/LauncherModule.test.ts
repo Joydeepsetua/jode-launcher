@@ -23,6 +23,8 @@ jest.mock('../src/native/NativeLauncher', () => ({
     completeSetup: jest.fn(),
     requestUsageAccess: jest.fn(),
     openScreenTime: jest.fn(),
+    isDrawerHintSeen: jest.fn(),
+    markDrawerHintSeen: jest.fn(),
     isDefaultLauncher: jest.fn(),
     requestDefaultLauncher: jest.fn(),
     onAppsChanged: jest.fn(),

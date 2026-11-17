@@ -329,6 +329,12 @@ class LauncherModule(reactContext: ReactApplicationContext) : NativeLauncherSpec
     preferences.setShowClock(value)
   }
 
+  override fun isDrawerHintSeen(): Boolean = preferences.drawerHintSeen()
+
+  override fun markDrawerHintSeen() {
+    preferences.setDrawerHintSeen()
+  }
+
   override fun getShowAppIcons(): Boolean = preferences.showAppIcons()
 
   override fun setShowAppIcons(value: Boolean) {
